@@ -1,14 +1,13 @@
 # get-biji-export
 
-把 Get 笔记（biji）的笔记数据同步到本地（Mongita），并支持导出为 Markdown。
+把 Get 笔记（biji.com）的笔记数据导出为 Markdown。  
 
 ## 功能
 
-- 一条命令启动：缺少登录态 token 时自动打开浏览器登录；回车后自动抓取并写入本地 `.env`，然后继续爬取。
-- 拉取笔记列表：`GET https://get-notes.luojilab.com/voicenotes/web/notes`
-- （默认开启）对 `note_type=link` 的笔记追加拉取详情：`GET /voicenotes/web/notes/{id}/links/detail`
-- 本地存储：默认写入 Mongita（可选从旧 JSONL 迁移）
-- 导出：从 Mongita 导出到 Markdown（YAML front matter + 正文内容）
+- **抖音号关注作者笔记导出**：通过API批量导出抖音号关注作者的全部笔记（含完整原文内容）
+- 自动分页获取所有笔记
+- 支持从 URL 自动解析参数
+- 认证信息集中管理，支持交互式 Token 更新
 
 ## 环境要求
 
@@ -19,93 +18,97 @@
 ## 安装
 
 ```bash
-uv sync --extra dev
+pip install requests
 ```
 
-## 运行爬虫（推荐）
+或使用 uv:
 
 ```bash
-uv run run_biji_notes_spider.py
+uv sync
 ```
 
-首次运行流程：
+## 快速开始
 
-1. 尝试从当前目录 `.env` 读取 `BIJI_BEARER_TOKEN` / `BIJI_REFRESH_TOKEN`。
-2. 若缺少，会自动打开浏览器进入登录页（默认 `https://www.biji.com/note`），你手动完成登录。
-3. 回到终端按回车，脚本会从页面 `localStorage` 抓取 `token/refresh_token` 写入 `.env`，随后自动关闭浏览器并继续爬取。
+### 1. 配置认证信息
 
-> 建议优先使用 `BIJI_REFRESH_TOKEN`，脚本会自动换取/刷新 access token。
+首次使用需要配置认证信息。打开浏览器访问 biji.com 并登录，然后：
 
-## 数据存储（默认 Mongita）
+1. 打开 Chrome DevTools (F12) → Network 标签
+2. 触发任意 `knowledge-api.trytalks.com` 请求
+3. 复制以下请求头值到 `config/biji_auth.json`：
 
-默认写入本地 Mongita 数据库（嵌入式、无需启动服务）：
+```json
+{
+    "authorization": "Bearer eyJhbGc...",
+    "xi-csrf-token": "xxx",
+    "x-appid": "3",
+    "cookie": "..."
+}
+```
 
-- 数据目录：`data/mongita/`（可用 `BIJI_MONGITA_DIR` 修改）
-- 数据库名：`biji`（可用 `BIJI_MONGITA_DB` 修改）
-- 集合（相当于“三张表”）：
-  - `notes`：列表接口返回的笔记（可用 `BIJI_MONGITA_NOTES_COLLECTION` 修改）
-  - `details`：仅 `note_type=link` 的详情（可用 `BIJI_MONGITA_DETAILS_COLLECTION` 修改）
-  - `misc`：迁移/其它杂项记录（可用 `BIJI_MONGITA_MISC_COLLECTION` 修改）
-
-> 说明：`details` 只对应 link 类型笔记，所以数量通常会小于 `notes`。
-
-## 导出 Markdown
+或者使用交互式更新：
 
 ```bash
-uv run scripts/export_mongita_to_markdown.py --out data/markdown
+python scripts/biji_export.py --update-token
 ```
 
-导出规则：
-
-- 每条笔记一个 `.md`
-- 头部为 YAML front matter（title / note_id / url / tags / created_at / updated_at 等）
-- 正文优先使用 `details.raw.content`，没有 detail 时回退到 `notes.raw.content/body_text/json_content`
-- tag 处理：任意空白会被替换为 `_`（确保 tag 无空格）
-- 文件名默认使用 `title`，如重名会自动追加 `note_id` 避免覆盖
-
-只导出有详情的笔记（通常是 link）：
+### 2. 导出笔记
 
 ```bash
-uv run scripts/export_mongita_to_markdown.py --only-details
+# 从 URL 导出
+python scripts/biji_export.py "https://www.biji.com/subject/BJ8XV7AJ/DEFAULT?followId=1077890&followName=第四种黑猩猩"
+
+# 指定 topic-id（当自动获取失败时）
+python scripts/biji_export.py "https://www.biji.com/subject/20jqglxY/DEFAULT?followId=1109306" --topic-id 2362709
 ```
 
-## 迁移旧 JSONL 到 Mongita
+### 3. 输出
+
+导出的 Markdown 文件保存在 `data/biji_export/` 目录：
+
+```
+data/biji_export/
+├── 第四种黑猩猩_完整导出_20260207.md
+├── AI樟榆树_完整导出_20260207.md
+└── ...
+```
+
+## 目录结构
+
+```
+get-biji-export/
+├── config/
+│   └── biji_auth.json      # 认证配置
+├── data/
+│   └── biji_export/        # 导出文件
+├── scripts/
+│   ├── biji_export.py      # 主导出脚本
+│   └── refresh_token_browser.py  # Token 刷新工具
+└── README.md
+```
+
+## 常见问题
+
+### Token 过期
+
+当遇到 `401 Unauthorized` 或 `500 Server Error` 时，通常是 Token 过期。运行：
 
 ```bash
-uv run scripts/migrate_jsonl_to_mongita.py --jsonl data/notes.jsonl --mongita-dir data/mongita
+python scripts/biji_export.py --update-token
 ```
 
-## 单独抓取登录态（可选）
+按提示更新认证信息即可。
 
-如果你只想先把 token 写入 `.env`：
+### 获取 topic_id
 
-```bash
-uv run scripts/capture_biji_env.py --env .env
-```
+如果脚本无法自动获取 `topic_id`，可以：
 
-## 常用配置（`.env`）
-
-以下键均可写入 `.env`（已在 `.gitignore` 忽略，避免误提交）：
-
-- `BIJI_REFRESH_TOKEN`：优先使用 refresh_token 自动换取 access token
-- `BIJI_BEARER_TOKEN`：直接使用 access token
-- `BIJI_LIMIT`：列表分页大小，默认 `100`
-- `BIJI_SINCE_ID`：起始 `since_id`，默认空
-- `BIJI_SORT`：默认 `create_desc`
-- `BIJI_FETCH_DETAIL`：是否拉取 link detail，默认 `1`；设为 `0` 关闭
-- `BIJI_MONGITA_DIR`：默认 `data/mongita`
-- `BIJI_MONGITA_DB`：默认 `biji`
-- `BIJI_MONGITA_NOTES_COLLECTION`：默认 `notes`
-- `BIJI_MONGITA_DETAILS_COLLECTION`：默认 `details`
-- `BIJI_MONGITA_MISC_COLLECTION`：默认 `misc`
-
-## 开发与测试
-
-```bash
-uv run pytest -q
-```
+1. 在浏览器中打开目标页面
+2. 打开 DevTools → Network
+3. 查找 `topic/detail` 请求，从请求体中获取 `topic_id`
+4. 使用 `--topic-id` 参数指定
 
 ## 安全提示
 
-- 不要把 token/refresh_token 写进代码或提交到 git；只放在本地 `.env`。
-- `.env*`、`data/`、`tmp/` 均已在 `.gitignore` 中忽略。
+- 不要把认证信息提交到 git
+- `config/` 和 `data/` 目录已在 `.gitignore` 中忽略
