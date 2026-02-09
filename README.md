@@ -7,7 +7,7 @@
 - **抖音号关注作者笔记导出**：通过API批量导出抖音号关注作者的全部笔记（含完整原文内容）
 - 自动分页获取所有笔记
 - 支持从 URL 自动解析参数
-- 认证信息集中管理，支持交互式 Token 更新
+- **自动认证刷新**：提供浏览器自动化脚本，一键获取有效 Token
 
 ## 环境要求
 
@@ -17,36 +17,48 @@
 
 ## 安装
 
+推荐使用 `uv` 进行依赖管理：
+
 ```bash
-pip install requests
+# 安装 uv (如果尚未安装)
+pip install uv
+
+# 同步依赖 (会自动创建虚拟环境并安装所有依赖，包括 playwright)
+uv sync
+
+# 安装浏览器驱动 (仅首次运行需要)
+uv run playwright install chromium
 ```
 
-或使用 uv:
+或者使用 pip 手动安装：
 
 ```bash
-uv sync
+pip install requests playwright
+playwright install chromium
 ```
 
 ## 快速开始
 
 ### 1. 配置认证信息
 
-首次使用需要配置认证信息。打开浏览器访问 biji.com 并登录，然后：
+最简单的方法是使用自动化脚本：
 
-1. 打开 Chrome DevTools (F12) → Network 标签
-2. 触发任意 `knowledge-api.trytalks.com` 请求
-3. 复制以下请求头值到 `config/biji_auth.json`：
-
-```json
-{
-    "authorization": "Bearer eyJhbGc...",
-    "xi-csrf-token": "xxx",
-    "x-appid": "3",
-    "cookie": "..."
-}
+```bash
+# Windows
+python scripts/refresh_token_browser.py
+# 或使用 uv 运行
+uv run scripts/refresh_token_browser.py
 ```
 
-或者使用交互式更新：
+脚本会自动打开一个浏览器窗口：
+1. 请在窗口中登录 biji.com
+2. 登录后点击任意一篇笔记
+3. 脚本会自动捕获 Token 并保存到 `config/biji_auth.json`
+4. 看到 "Token 已更新" 提示后即可关闭窗口
+
+**备选方案（手动抓包）：**
+
+如果自动化脚本无法工作，可以运行手动引导模式：
 
 ```bash
 python scripts/biji_export.py --update-token
@@ -78,12 +90,13 @@ data/biji_export/
 ```
 get-biji-export/
 ├── config/
-│   └── biji_auth.json      # 认证配置
+│   └── biji_auth.json      # 认证配置 (自动生成)
 ├── data/
 │   └── biji_export/        # 导出文件
 ├── scripts/
 │   ├── biji_export.py      # 主导出脚本
-│   └── refresh_token_browser.py  # Token 刷新工具
+│   └── refresh_token_browser.py  # 浏览器自动化 Token 刷新工具
+├── .env.example            # 环境变量示例
 └── README.md
 ```
 
@@ -91,13 +104,7 @@ get-biji-export/
 
 ### Token 过期
 
-当遇到 `401 Unauthorized` 或 `500 Server Error` 时，通常是 Token 过期。运行：
-
-```bash
-python scripts/biji_export.py --update-token
-```
-
-按提示更新认证信息即可。
+当遇到 `401 Unauthorized` 或 `500 Server Error` 时，通常是 Token 过期。重新运行 `scripts/refresh_token_browser.py` 即可。
 
 ### 获取 topic_id
 
@@ -110,5 +117,5 @@ python scripts/biji_export.py --update-token
 
 ## 安全提示
 
-- 不要把认证信息提交到 git
+- 不要把认证信息（`config/biji_auth.json` 或 `.env`）提交到 git
 - `config/` 和 `data/` 目录已在 `.gitignore` 中忽略
