@@ -69,6 +69,19 @@ def chrome_profile_dir() -> Path:
     return path
 
 
+def _open_login_panel(page) -> None:
+    """未登录时 /subject 会跳回官网首页，这里主动点开「注册/登录」弹窗。
+    已登录（没有登录按钮）时静默跳过。"""
+    try:
+        time.sleep(3)  # 等 SPA 跳转和渲染
+        for ele in page.eles("text:登录"):
+            if ele.states.is_displayed:
+                ele.click(by_js=True)
+                return
+    except Exception:
+        pass
+
+
 def capture_token(log: Callable[[str], None] = print) -> dict:
     """
     启动系统 Chrome 抓取 biji Token 并保存。
@@ -95,7 +108,8 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
     try:
         page.listen.start(API_DOMAIN)
         page.get(BIJI_HOME)
-        log("已打开 biji 知识库页面，正在监听登录请求…")
+        _open_login_panel(page)
+        log("已打开 biji，请在浏览器窗口中扫码/验证登录，登录成功后自动完成")
 
         start = time.monotonic()
         hinted = False
@@ -120,6 +134,7 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
                 # （覆盖登录后跳转到其他页面、页面未自动刷新等情况）
                 try:
                     page.get(BIJI_HOME)
+                    _open_login_panel(page)
                 except Exception:
                     break
     except Exception as exc:
