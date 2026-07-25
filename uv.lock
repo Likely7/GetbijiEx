@@ -395,18 +395,6 @@ wheels = [
 ]
 
 [[package]]
-name = "datarecorder"
-version = "3.6.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "openpyxl" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/a1/43d52eada4e1364f8d1a5da99b855798f945228ffb7dfb199f675c1d2c2b/DataRecorder-3.6.2.tar.gz", hash = "sha256:8c9024736692af68b947fd884589e685c4f27bc29d031b81164457b09c60e1e5", size = 29567, upload-time = "2024-10-15T08:58:36.923Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/05/f0064d93a0b922ea7ad5d40a0dfaac45de37f783a85a2900e6ce8a01dbc3/DataRecorder-3.6.2-py3-none-any.whl", hash = "sha256:41ad022c4c1db58a0f4236f6a4991d1f98cd76ec049484b172bbb3040455e5ff", size = 37539, upload-time = "2024-10-15T08:58:35.419Z" },
-]
-
-[[package]]
 name = "dbutils"
 version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -434,35 +422,48 @@ wheels = [
 ]
 
 [[package]]
-name = "downloadkit"
-version = "2.0.7"
+name = "drissionget"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "datarecorder" },
+    { name = "drissionrecord" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/35/9bbaed54f5d170b1fd8bcfdd3ce5e24ea71f4cac5026a37e6b21ab69726e/DownloadKit-2.0.7.tar.gz", hash = "sha256:601e423d1d4d0bd3e933524d06c913e744577d455990ec20afc3fb1f79aea9a7", size = 17488, upload-time = "2024-11-30T01:24:30.539Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/2c/c9d6aeffeecd7f5620af419d8a33aec7d2ab29da7503a442dae2d7177a15/drissionget-1.2.1.tar.gz", hash = "sha256:a05519bea59cc7a588f1a5a9ee6844282e59963eac212baa406da1c20bca9908", size = 18014, upload-time = "2026-06-04T01:44:33.94Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/89/979ad2407eb8e0a2ac67461b7bec7db8627218fe3ba287db49636ca0a60c/DownloadKit-2.0.7-py3-none-any.whl", hash = "sha256:55b142d26b4e7ae01fff2181991c92aca9b895f75e2cd8a54f4a3b48c50b90b4", size = 21706, upload-time = "2024-11-30T01:24:17.599Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/93/7e4f2026811349c70fb9b7a2cc4c1dc31a6592fa41554d0e4406b80bf83c/drissionget-1.2.1-py3-none-any.whl", hash = "sha256:cd0ae08c26e6a7f5bd105ca787d79854569c8ebfeb67f978b86aee7d2b983a29", size = 22254, upload-time = "2026-06-04T01:44:32.923Z" },
 ]
 
 [[package]]
 name = "drissionpage"
-version = "4.1.1.2"
+version = "4.1.1.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "cssselect" },
-    { name = "downloadkit" },
+    { name = "drissionget" },
+    { name = "drissionrecord" },
     { name = "lxml" },
     { name = "psutil" },
     { name = "requests" },
     { name = "tldextract" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/12/b3/26bb358f3c7019bba0a2e27a636382a4226780628c30ab315537524809fb/drissionpage-4.1.1.2.tar.gz", hash = "sha256:e4375d3536519a1d24430270e2871de3015836b301cbdfb96583234e6d6ef4c1", size = 208034, upload-time = "2025-07-31T07:00:36.24Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/bf/872f23aff6181a2456dc94f955e43c5dff1bcaa2e4c64ed886df0bbbeee6/drissionpage-4.1.1.4.tar.gz", hash = "sha256:4c624485cbc576e1477edb77cd92a3184704f7d6d0fd01928c944a5e66ba4719", size = 207960, upload-time = "2026-05-27T01:49:10.846Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/31/05834b38c12a222012f998d5c2f104f228cf8aaa37747f989c9b29e81d5d/DrissionPage-4.1.1.2-py3-none-any.whl", hash = "sha256:c8b58a8d495550142c10499ce7128655b2baf8f38f46604ba0ce951a148d88e8", size = 257497, upload-time = "2025-07-31T07:00:34.531Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/98/6411ae36a9c103e4cf78e2674643c6c0f6aeb394ea84544c2bcff7f3f27f/drissionpage-4.1.1.4-py3-none-any.whl", hash = "sha256:d1d066e732031c16b00bdc88a2f450e8400da46362597a23c8c6144e4cbb768d", size = 258240, upload-time = "2026-05-27T01:49:08.774Z" },
+]
+
+[[package]]
+name = "drissionrecord"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openpyxl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/9c/c691bf126f924973ca48f38a3ec7a3a059ca18c6b211d30b981313a0d424/drissionrecord-2.0.1.tar.gz", hash = "sha256:863305bc09aec58158045f45eb6935e15ba9ac15e358920105b20f4a730b2ed7", size = 43311, upload-time = "2026-04-13T06:33:12.488Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/bd/d6489d2056fd2cfd5535c726e4d1e95e2d20d8a86593e83768eff7e1c3d0/drissionrecord-2.0.1-py3-none-any.whl", hash = "sha256:b6efb09268ca2b5fb5e2942d3bfb75d70fe6c936770aaac02fca16e6960fe9ee", size = 57734, upload-time = "2026-04-13T06:33:11.174Z" },
 ]
 
 [[package]]
@@ -590,6 +591,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pyinstaller" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -604,7 +606,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pyinstaller", specifier = ">=6.16.0" }]
+dev = [
+    { name = "pyinstaller", specifier = ">=6.16.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+]
 
 [[package]]
 name = "greenlet"
@@ -686,6 +691,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/12/d4/4c1bd3a8f85403fad3137a7e44f7882b0366586b7c27d12713493516f1c7/influxdb-5.3.2.tar.gz", hash = "sha256:58c647f6043712dd86e9aee12eb4ccfbbb5415467bc9910a48aa8c74c1108970", size = 70792, upload-time = "2024-04-18T21:45:09.163Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/00/d0ea35f823c46a5cd4fa80d933176d251573601d920737ce8a85df7664db/influxdb-5.3.2-py2.py3-none-any.whl", hash = "sha256:00d86b18a968d011b2eee39ec3b2ae941b1dcf7086bc7211e675914623caffcd", size = 79391, upload-time = "2024-04-18T21:45:06.471Z" },
+]
+
+[[package]]
+name = "iniconfig"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
 ]
 
 [[package]]
@@ -1128,6 +1142,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pluggy"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.52"
 source = { registry = "https://pypi.org/simple" }
@@ -1351,6 +1374,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/69/56/e4d7e1bd70d997713649c5ce530b2d15a5fc2245a74ca820fc2d51d89d4d/pyphen-0.17.2.tar.gz", hash = "sha256:f60647a9c9b30ec6c59910097af82bc5dd2d36576b918e44148d8b07ef3b4aa3", size = 2079470, upload-time = "2025-01-20T13:18:36.296Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/1f/c2142d2edf833a90728e5cdeb10bdbdc094dde8dbac078cee0cf33f5e11b/pyphen-0.17.2-py3-none-any.whl", hash = "sha256:3a07fb017cb2341e1d9ff31b8634efb1ae4dc4b130468c7c39dd3d32e7c3affd", size = 2079358, upload-time = "2025-01-20T13:18:29.629Z" },
+]
+
+[[package]]
+name = "pytest"
+version = "9.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "iniconfig" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
 ]
 
 [[package]]
