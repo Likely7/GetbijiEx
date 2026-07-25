@@ -311,7 +311,7 @@ function dependencyErrorMessage(result) {
 function validateSourceRuntime(descriptor) {
   const result = spawnSync(
     descriptor.command,
-    ["--directory", descriptor.path, "run", "python", "--version"],
+    [...descriptor.argsPrefix, "--help"],
     {
       cwd: descriptor.cwd,
       encoding: "utf8",

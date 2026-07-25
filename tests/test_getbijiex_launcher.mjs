@@ -208,6 +208,44 @@ test("source runtime turns a failed dependency preflight into a structured error
   );
 });
 
+test("launcher turns a source CLI import failure into structured JSON", async () => {
+  const root = await temporaryDirectory("getbijiex-broken-import-");
+  const source = path.join(root, "source");
+  const scripts = path.join(source, "scripts");
+  await mkdir(scripts, { recursive: true });
+  await writeFile(
+    path.join(source, "pyproject.toml"),
+    "[project]\n"
+      + "name = \"getbijiex-broken-import\"\n"
+      + "version = \"0.0.0\"\n"
+      + "requires-python = \">=3.11\"\n"
+      + "dependencies = []\n",
+    "utf8",
+  );
+  await writeFile(
+    path.join(scripts, "biji_cli.py"),
+    "import definitely_extra_missing_dependency\n",
+    "utf8",
+  );
+  const launcher = path.resolve("skills/getbijiex/scripts/getbijiex-cli.mjs");
+
+  const result = spawnSync(process.execPath, [launcher, "topics"], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      GETBIJIEX_SOURCE: source,
+      GETBIJIEX_DATA_DIR: path.join(root, "data"),
+    },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(
+    JSON.parse(result.stdout).error,
+    /^GetbijiExDependencyMissing:/,
+  );
+  assert.equal(result.stderr, "");
+});
+
 test("launcher forwards arguments, output, and exit status", async () => {
   const root = await temporaryDirectory("getbijiex-forward-");
   const executable = process.execPath;

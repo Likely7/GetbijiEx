@@ -35,7 +35,7 @@ GetbijiEx 用于把 biji.com（Get笔记/得到大脑）知识库中订阅博主
 2026-07-26 对 npx Skill 安装改造完成了本地发布前验证：
 
 - `pytest`：28 个测试通过。
-- Node 启动器：13 个测试通过，其中包含不信任工作目录源码、缺失 `uv` 提示和参数/退出码转发测试。
+- Node 启动器：15 个测试通过，其中包含不信任工作目录源码、缺失 `uv`、CLI 依赖导入失败提示和参数/退出码转发测试。
 - 标准 `skills` CLI 可以发现并在隔离 HOME 中安装 `getbijiex`。
 - 源码版和打包版 `install-skill` 均能复制完整 Skill 资源并生成直连命令。
 - macOS Apple Silicon PyInstaller 构建成功，打包版 CLI 和 Skill 安装命令通过烟雾测试。
