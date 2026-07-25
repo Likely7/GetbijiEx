@@ -18,7 +18,7 @@ class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Biji 导出小工具")
-        self.root.geometry("760x760")
+        self.root.geometry("760x860")
 
         self.url_var = tk.StringVar()
         self.topic_id_var = tk.StringVar()
@@ -27,6 +27,8 @@ class App:
         self.authorization_var = tk.StringVar()
         self.csrf_var = tk.StringVar()
         self.appid_var = tk.StringVar(value="3")
+        self.topics = []
+        self.follows = []
 
         self.build_ui()
         self.refresh_auth_status()
@@ -84,16 +86,26 @@ class App:
         export_frame = ttk.LabelFrame(main, text="2. 导出笔记", padding=12)
         export_frame.pack(fill="x", pady=(16, 0))
 
-        ttk.Label(export_frame, text="Biji 博主 URL").grid(row=0, column=0, sticky="w")
-        ttk.Entry(export_frame, textvariable=self.url_var, width=88).grid(row=1, column=0, columnspan=3, sticky="ew", pady=(4, 10))
+        self.load_topics_button = ttk.Button(export_frame, text="加载知识库", command=self.handle_load_topics)
+        self.load_topics_button.grid(row=0, column=0, sticky="w")
+        self.topic_combo = ttk.Combobox(export_frame, state="readonly", width=60)
+        self.topic_combo.grid(row=0, column=1, sticky="ew", padx=(12, 0))
+        self.topic_combo.bind("<<ComboboxSelected>>", self.handle_topic_selected)
 
-        ttk.Label(export_frame, text="Topic ID（可选）").grid(row=2, column=0, sticky="w")
-        ttk.Entry(export_frame, textvariable=self.topic_id_var, width=24).grid(row=3, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(export_frame, text="博主").grid(row=1, column=0, sticky="w", pady=(10, 0))
+        self.follow_combo = ttk.Combobox(export_frame, state="readonly", width=60)
+        self.follow_combo.grid(row=1, column=1, sticky="ew", padx=(12, 0), pady=(10, 0))
 
         self.export_button = ttk.Button(export_frame, text="开始导出", command=self.handle_export)
-        self.export_button.grid(row=3, column=1, sticky="w", padx=(12, 0))
+        self.export_button.grid(row=2, column=1, sticky="w", pady=(12, 0))
 
-        export_frame.columnconfigure(0, weight=1)
+        ttk.Separator(export_frame, orient="horizontal").grid(row=3, column=0, columnspan=2, sticky="ew", pady=(14, 8))
+        ttk.Label(export_frame, text="手动模式（可选）：粘贴 Biji 博主 URL").grid(row=4, column=0, columnspan=2, sticky="w")
+        ttk.Entry(export_frame, textvariable=self.url_var, width=88).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(4, 6))
+        ttk.Label(export_frame, text="Topic ID（可选）").grid(row=6, column=0, sticky="w")
+        ttk.Entry(export_frame, textvariable=self.topic_id_var, width=24).grid(row=6, column=1, sticky="w", padx=(12, 0))
+
+        export_frame.columnconfigure(1, weight=1)
 
         output_frame = ttk.LabelFrame(main, text="3. 输出目录", padding=12)
         output_frame.pack(fill="x", pady=(16, 0))
@@ -124,6 +136,7 @@ class App:
         state = "disabled" if busy else "normal"
         self.open_login_button.configure(state=state)
         self.save_token_button.configure(state=state)
+        self.load_topics_button.configure(state=state)
         self.export_button.configure(state=state)
         self.status_var.set(status)
 
@@ -148,6 +161,74 @@ class App:
                 pass
         self.auth_label.configure(text="未检测到有效 Token，请先保存。")
 
+    def handle_load_topics(self):
+        self.set_busy(True, "正在加载知识库...")
+        self.append_log("正在加载知识库列表…")
+        threading.Thread(target=self._load_topics_worker, daemon=True).start()
+
+    def _load_topics_worker(self):
+        try:
+            topics = biji_export.list_topics()
+        except Exception as exc:
+            self.root.after(0, self._load_topics_done, None, exc)
+        else:
+            self.root.after(0, self._load_topics_done, topics, None)
+
+    def _load_topics_done(self, topics, error):
+        self.set_busy(False, "准备就绪")
+        if error is not None:
+            self._show_load_error("加载知识库失败", error)
+            return
+        self.topics = topics
+        self.follows = []
+        self.follow_combo.set("")
+        self.follow_combo.configure(values=[])
+        self.topic_combo.configure(
+            values=[f"{t['name']}（{t['count']} 个内容）" for t in topics]
+        )
+        self.append_log(f"✅ 已加载 {len(topics)} 个知识库")
+        if topics:
+            self.topic_combo.current(0)
+            self.handle_topic_selected()
+
+    def handle_topic_selected(self, event=None):
+        index = self.topic_combo.current()
+        if index < 0 or index >= len(self.topics):
+            return
+        topic = self.topics[index]
+        self.set_busy(True, "正在加载博主列表...")
+        self.append_log(f"正在加载「{topic['name']}」的博主列表…")
+        threading.Thread(target=self._load_follows_worker, args=(topic,), daemon=True).start()
+
+    def _load_follows_worker(self, topic):
+        try:
+            follows = biji_export.list_follows(topic["id_alias"])
+        except Exception as exc:
+            self.root.after(0, self._load_follows_done, None, exc)
+        else:
+            self.root.after(0, self._load_follows_done, follows, None)
+
+    def _load_follows_done(self, follows, error):
+        self.set_busy(False, "准备就绪")
+        if error is not None:
+            self._show_load_error("加载博主列表失败", error)
+            return
+        self.follows = follows
+        self.follow_combo.configure(
+            values=[f"{f['name']}（{f['note_count']} 篇）" for f in follows]
+        )
+        self.append_log(f"✅ 共 {len(follows)} 位博主")
+        if follows:
+            self.follow_combo.current(0)
+
+    def _show_load_error(self, title, error):
+        if isinstance(error, biji_export.AuthError):
+            self.append_log("❌ Token 已过期，请重新点「自动获取 Token」")
+            messagebox.showerror(title, "Token 已过期，请重新点「自动获取 Token」")
+        else:
+            self.append_log(f"❌ {error}")
+            messagebox.showerror(title, str(error))
+
     def handle_auto_token(self):
         self.set_busy(True, "正在自动获取 Token...")
         self.append_log("启动 Chrome，准备自动获取 Token…")
@@ -171,7 +252,7 @@ class App:
         self.refresh_auth_status()
         if result == "success":
             self.append_log("✅ Token 已自动获取并保存")
-            messagebox.showinfo("获取成功", "Token 已自动获取并保存")
+            self.handle_load_topics()
         elif result is None:
             self.append_log("已取消获取 Token（浏览器窗口被关闭）")
         else:
@@ -212,10 +293,12 @@ class App:
             self.set_busy(False, "准备就绪")
 
     def handle_export(self):
-        url = self.url_var.get().strip()
-        if not url:
-            messagebox.showwarning("缺少 URL", "请先输入 biji 博主页面 URL")
-            return
+        follow_index = self.follow_combo.current()
+        topic_index = self.topic_combo.current()
+        use_selection = (
+            0 <= follow_index < len(self.follows)
+            and 0 <= topic_index < len(self.topics)
+        )
 
         topic_text = self.topic_id_var.get().strip()
         topic_id = None
@@ -226,18 +309,43 @@ class App:
                 messagebox.showwarning("Topic ID 无效", "Topic ID 必须是数字")
                 return
 
+        url = None
+        follow = None
+        topic = None
+        if use_selection:
+            follow = self.follows[follow_index]
+            topic = self.topics[topic_index]
+            target_desc = f"{topic['name']} / {follow['name']}"
+        else:
+            url = self.url_var.get().strip()
+            if not url:
+                messagebox.showwarning("缺少导出目标", "请先选择知识库和博主，或粘贴 biji 博主页面 URL")
+                return
+            target_desc = url
+
         output = self.output_dir_var.get().strip() or None
         self.set_busy(True, "正在导出笔记...")
-        self.append_log(f"开始导出：{url}")
+        self.append_log(f"开始导出：{target_desc}")
         threading.Thread(
-            target=self._export_worker, args=(url, topic_id, output), daemon=True
+            target=self._export_worker,
+            args=(url, topic_id, output, follow, topic),
+            daemon=True,
         ).start()
 
-    def _export_worker(self, url, topic_id, output):
+    def _export_worker(self, url, topic_id, output, follow=None, topic=None):
         try:
-            result = biji_export.export_notes(
-                url, topic_id_override=topic_id, output_dir=output
-            )
+            if follow is not None:
+                result = biji_export.export_notes_core(
+                    follow["follow_id"],
+                    follow["name"],
+                    topic["id_alias"],
+                    topic_id_override=topic_id if topic_id is not None else follow.get("topic_id"),
+                    output_dir=output,
+                )
+            else:
+                result = biji_export.export_notes(
+                    url, topic_id_override=topic_id, output_dir=output
+                )
         except Exception as exc:
             self.root.after(0, self._export_done, None, str(exc))
         else:
