@@ -1,19 +1,33 @@
 ---
 name: getbijiex
 description: 导出 biji.com（Get笔记/得到大脑）知识库中订阅博主（多为抖音）的笔记为 Markdown。当用户想导出 biji 笔记、知识库内容、订阅博主笔记，或提到"biji""得到大脑""Get笔记"导出时使用。依赖本机已安装 GetbijiEx 或其源码。
+compatibility: 需要本机已安装 GetbijiEx App、Windows 程序或源码；npx 安装模式还需要 Node.js 22.20+，源码模式另外需要 Python 3.11+ 和 uv。
 ---
 
 # GetbijiEx
 
 本机装有「GetbijiEx」，以下 CLI 就是它的命令行模式，所有命令**输出 JSON 到 stdout**，过程日志在 stderr。
 
-CLI 命令前缀（后文统称 `CLI`）：
+## CLI 命令
+
+<!-- GETBIJIEX_CLI_COMMAND_START -->
+如果本 Skill 是通过 `npx skills add` 安装的，先把下面脚本路径解析为**当前 Skill 根目录下的绝对路径**，后文统称这条命令为 `CLI`：
 
 ```bash
-{{CLI_COMMAND}}
+node "<当前 Skill 根目录>/scripts/getbijiex-cli.mjs"
 ```
 
+不要把 `<当前 Skill 根目录>` 原样交给终端。如果启动器返回 `GetbijiExNotFound`，请你自己在本机查找 GetbijiEx，然后运行以下任意一条配置命令，不要要求用户猜路径。为避免执行当前项目中的不可信脚本，启动器不会自动把工作目录里的 `scripts/biji_cli.py` 当成 GetbijiEx 源码：
+
+```bash
+node "<当前 Skill 根目录>/scripts/getbijiex-cli.mjs" configure --executable "<GetbijiEx.app、GetbijiEx 或 GetbijiEx.exe 的真实路径>"
+node "<当前 Skill 根目录>/scripts/getbijiex-cli.mjs" configure --source "<包含 scripts/biji_cli.py 的 GetbijiEx 源码根目录>"
+```
+<!-- GETBIJIEX_CLI_COMMAND_END -->
+
 ## 子命令
+
+把下列示例中的 `CLI` 替换为上面确定的实际命令前缀：
 
 ```bash
 CLI topics                          # 知识库列表：name / id_alias / count / source
@@ -37,3 +51,5 @@ CLI token                           # 刷新 Token（弹出浏览器，见下）
 
 - 导出结果默认在应用数据目录（JSON 结果里的 `output_dir` 字段有完整路径），`markdown_path` 是成品。
 - 用户想换输出位置时用 `--output-dir`。
+- Skill 只是调用说明和启动器，不包含 GetbijiEx 导出程序本体。
+- 源码模式需要 Python 3.11+ 和 `uv`；如果返回 `GetbijiExDependencyMissing`，先安装 `uv` 并确认它已加入 PATH，然后重试。

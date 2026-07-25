@@ -20,6 +20,7 @@
 - [x] 完成 GetbijiEx 品牌改名与旧数据目录迁移。
 - [x] 建立 macOS、Windows 自动构建流程。
 - [x] README 提供可直接复制给 Agent 的安装和单独安装 Skill 提示词。
+- [x] 支持 `npx skills add` 从 GitHub 单独安装 Skill，并提供跨平台本机启动器。
 
 ## 阶段二：首个公开版本（当前阶段）
 
@@ -35,7 +36,7 @@
 
 - [x] 给 Windows 用户补充 SmartScreen 和首次运行说明。
 - [x] 给 macOS 用户补充未签名应用的首次打开说明。
-- [ ] 在 CI 中增加自动测试步骤，构建前先运行 `pytest`。
+- [x] 在 CI 中增加 Python、Linux/Windows Node 启动器和标准 Skill 发现测试，验证通过后再构建。
 - [ ] 增加失败导出的可恢复机制或失败条目清单。
 - [ ] 改善窄窗口、小屏幕和系统字体放大时的 GUI 布局。
 
