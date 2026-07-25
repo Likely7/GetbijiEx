@@ -17,8 +17,10 @@ BIJI_HOME = "https://www.biji.com/subject"
 API_DOMAIN = "knowledge-api.trytalks.com"
 # 首次使用需要登录，超过这个秒数还没抓到就在日志里提示用户
 FIRST_LOGIN_HINT_SECONDS = 120
-# 空闲监听超时：这么长时间没有任何匹配请求就放弃，避免界面永远卡住
-IDLE_TIMEOUT_SECONDS = 300
+# 空闲监听超过这个秒数就自动把页面导航回知识库页面，重新触发请求
+RENAVIGATE_SECONDS = 30
+# 总时长上限，避免界面永远卡在等待状态
+MAX_TOTAL_SECONDS = 900
 
 CHROME_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -97,14 +99,29 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
 
         start = time.monotonic()
         hinted = False
-        for packet in page.listen.steps(timeout=IDLE_TIMEOUT_SECONDS):
-            auth = extract_auth(packet.request.headers)
-            if auth:
-                captured = auth
+        while captured is None:
+            if not page.states.is_alive:
                 break
-            if not hinted and time.monotonic() - start > FIRST_LOGIN_HINT_SECONDS:
-                log("还没抓到：请先在浏览器里登录 biji，再打开任意一个知识库")
+            elapsed = time.monotonic() - start
+            if elapsed > MAX_TOTAL_SECONDS:
+                break
+            if not hinted and elapsed > FIRST_LOGIN_HINT_SECONDS:
+                log("还没抓到：请先在浏览器里登录 biji，登录成功后会自动完成")
                 hinted = True
+
+            for packet in page.listen.steps(timeout=RENAVIGATE_SECONDS):
+                auth = extract_auth(packet.request.headers)
+                if auth:
+                    captured = auth
+                    break
+
+            if captured is None and page.states.is_alive:
+                # 兜底：空闲超时后重新导航回知识库页面，主动触发一次请求
+                # （覆盖登录后跳转到其他页面、页面未自动刷新等情况）
+                try:
+                    page.get(BIJI_HOME)
+                except Exception:
+                    break
     except Exception as exc:
         raise TokenCaptureError(f"监听请求时出错：{exc}") from exc
     finally:
@@ -121,4 +138,4 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
     if not page.states.is_alive:
         raise CaptureCancelled("浏览器窗口已关闭，取消获取 Token")
 
-    raise TokenCaptureError("监听超时，未捕获到 Token。请重试，或改用手动粘贴 Token")
+    raise TokenCaptureError("等待超时，未捕获到 Token。请重试，或改用手动粘贴 Token")

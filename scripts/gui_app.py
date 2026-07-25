@@ -54,7 +54,7 @@ class App:
 
         ttk.Label(
             auth_frame,
-            text="点“自动获取 Token”后会弹出 Chrome：首次使用请登录 biji 并打开任意笔记，之后自动完成。抓不到时再手动粘贴。",
+            text="点“自动获取 Token”后会弹出 Chrome：首次使用请登录 biji，登录成功后自动完成；以后点一下即可。抓不到时再手动粘贴。",
             wraplength=680,
             justify="left",
         ).pack(anchor="w", pady=(8, 0))

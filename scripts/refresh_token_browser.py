@@ -22,7 +22,7 @@ from scripts.auto_token import (
 def main():
     print("\n=== Biji.com Token 自动获取程序 ===")
     print("程序将启动 Chrome 浏览器：")
-    print("- 首次使用：请在浏览器中登录 biji，再打开任意一篇笔记")
+    print("- 首次使用：请在浏览器中登录 biji，登录成功后自动完成")
     print("- 已登录过：程序会自动捕获 Token，无需操作\n")
 
     try:
