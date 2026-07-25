@@ -158,9 +158,24 @@ class App:
 
         ttk.Label(output_frame, text=f"应用数据目录：{user_data_root()}").pack(anchor="w", pady=(0, 6))
         ttk.Label(output_frame, textvariable=self.output_dir_var).pack(anchor="w")
-        ttk.Button(output_frame, text="选择输出目录", command=self.choose_output_dir).pack(anchor="w", pady=(10, 0))
-        ttk.Button(output_frame, text="恢复默认目录", command=self.reset_output_dir).pack(anchor="w", pady=(8, 0))
-        ttk.Button(output_frame, text="打开输出目录", command=self.open_output_dir).pack(anchor="w", pady=(8, 0))
+
+        output_buttons = ttk.Frame(output_frame)
+        output_buttons.pack(anchor="w", pady=(10, 0))
+        ttk.Button(
+            output_buttons,
+            text="选择输出目录",
+            command=self.choose_output_dir,
+        ).pack(side="left")
+        ttk.Button(
+            output_buttons,
+            text="恢复默认目录",
+            command=self.reset_output_dir,
+        ).pack(side="left", padx=(8, 0))
+        ttk.Button(
+            output_buttons,
+            text="打开输出目录",
+            command=self.open_output_dir,
+        ).pack(side="left", padx=(8, 0))
 
         log_frame = ttk.LabelFrame(main, text="运行日志", padding=12)
         log_frame.pack(fill="both", expand=True, pady=(16, 0))

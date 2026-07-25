@@ -2,6 +2,13 @@
 
 把 Get 笔记（biji.com）的笔记数据导出为 Markdown。  
 
+## 项目文档
+
+- [项目状态](docs/PROJECT_STATUS.md)：当前能力、验证基线、工作重点和已知限制
+- [路线图](docs/ROADMAP.md)：发布阶段、优先级和后续任务
+- [发布检查清单](docs/RELEASE_CHECKLIST.md)：测试、安全、GUI、CLI 和多平台发布验收
+- [技术决策记录](docs/DECISIONS.md)：关键架构选择及其原因
+
 ## 功能
 
 - **抖音号关注作者笔记导出**：通过API批量导出抖音号关注作者的全部笔记（含完整原文内容）
