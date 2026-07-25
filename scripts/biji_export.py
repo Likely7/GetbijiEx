@@ -26,6 +26,81 @@ class ExportError(Exception):
     pass
 
 
+class AuthError(ExportError):
+    """Token 过期或无效"""
+
+
+def _get_json(url: str, params: dict | None = None) -> dict:
+    """GET 请求并返回 JSON；Token 失效时抛 AuthError。"""
+    response = requests.get(url, headers=get_headers(), params=params, timeout=15)
+    data = response.json()
+    if "LoginRequired" in str(data.get("message", "")):
+        raise AuthError("Token 已过期，请重新获取")
+    response.raise_for_status()
+    return data
+
+
+def list_topics() -> list:
+    """合并我创建的 + 我订阅的知识库。
+    返回 [{"id_alias", "name", "count", "source": "mine"|"sub"}]"""
+    topics = []
+
+    mine = _get_json("https://knowledge-api.trytalks.com/v1/web/topic/mine/list")
+    for t in mine.get("c", []) or []:
+        topics.append({
+            "id_alias": t.get("id_alias"),
+            "name": t.get("name", "未命名"),
+            "count": t.get("extend_data", {}).get("all_resource_count", 0),
+            "source": "mine",
+        })
+
+    sub = _get_json(
+        "https://knowledge-api.trytalks.com/v1/web/subscribe/topic/list",
+        params={"page": 1, "size": 200, "exclude_mine": "true"},
+    )
+    for t in (sub.get("c", {}) or {}).get("list", []) or []:
+        topics.append({
+            "id_alias": t.get("id_alias"),
+            "name": t.get("name", "未命名"),
+            "count": t.get("extend_data", {}).get("all_resource_count", 0),
+            "source": "sub",
+        })
+
+    return topics
+
+
+def list_follows(topic_id_alias: str) -> list:
+    """知识库内博主列表（自动分页）。
+    返回 [{"follow_id", "name", "topic_id", "note_count", "platform"}]"""
+    follows = []
+    page = 1
+    while True:
+        data = _get_json(
+            "https://knowledge-api.trytalks.com/v1/web/follow/list",
+            params={
+                "topic_id": -1,
+                "topic_id_alias": topic_id_alias,
+                "type": 1,
+                "page": page,
+                "page_size": 50,
+            },
+        )
+        c = data.get("c", {}) or {}
+        for item in c.get("list", []) or []:
+            follows.append({
+                "follow_id": item.get("id"),
+                "name": item.get("name", "未命名"),
+                "topic_id": item.get("topic_id"),
+                "note_count": item.get("extend_data", {}).get("get_note_count", 0),
+                "platform": item.get("platform", ""),
+            })
+        if not c.get("has_next"):
+            break
+        page += 1
+        time.sleep(0.3)
+    return follows
+
+
 def load_headers() -> dict:
     """从配置文件加载认证 headers"""
     base_headers = {
@@ -277,11 +352,8 @@ def export_to_markdown(full_data: list, author_name: str, output_dir: Path) -> s
 
 
 def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path | None = None):
-    """导出笔记主流程"""
+    """从博主页面 URL 导出笔记"""
     print(f"解析 URL: {url}")
-
-    target_output_dir = Path(output_dir).expanduser() if output_dir else OUTPUT_DIR
-    target_output_dir.mkdir(parents=True, exist_ok=True)
 
     params = parse_biji_url(url)
     follow_id = params["follow_id"]
@@ -290,6 +362,26 @@ def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path
 
     if not follow_id or not author_name:
         raise ExportError("URL 缺少 followId 或 followName 参数")
+
+    return export_notes_core(
+        follow_id,
+        author_name,
+        topic_id_alias,
+        topic_id_override=topic_id_override,
+        output_dir=output_dir,
+    )
+
+
+def export_notes_core(
+    follow_id: int,
+    author_name: str,
+    topic_id_alias: str,
+    topic_id_override: int = None,
+    output_dir: str | Path | None = None,
+):
+    """导出笔记主流程"""
+    target_output_dir = Path(output_dir).expanduser() if output_dir else OUTPUT_DIR
+    target_output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"博主: {author_name}")
     print(f"Follow ID: {follow_id}")
