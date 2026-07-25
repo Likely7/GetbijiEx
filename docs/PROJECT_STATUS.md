@@ -1,8 +1,8 @@
 # 项目状态
 
-> 最后更新：2026-07-25  
-> 当前阶段：核心功能完成，进入公开发布前的稳定化阶段  
-> 主分支：`main`  
+> 最后更新：2026-07-26
+> 当前阶段：核心功能完成，进入公开发布前的稳定化阶段
+> 主分支：`main`
 > 远端仓库：https://github.com/Likely7/GetbijiEx
 
 ## 项目目标
@@ -24,6 +24,7 @@ GetbijiEx 用于把 biji.com（Get笔记/得到大脑）知识库中订阅博主
 | 跨平台数据目录 | 已完成 | macOS、Windows、Linux 分别使用各自标准应用数据目录 |
 | 双模式应用 | 已完成 | 无参数启动 GUI，带参数进入 JSON CLI |
 | Agent Skill | 已完成 | 支持 Claude Code、Codex 和自定义 Skill 根目录 |
+| 小白安装说明 | 已完成 | README 提供可直接复制给 Agent 的完整安装提示词、单独安装 Skill 提示词和各平台命令 |
 | macOS 打包 | 已完成 | 本机与 GitHub Actions 均已验证 |
 | Windows 打包 | 已完成 | GitHub Actions 已验证可生成 Windows 产物 |
 | 自动化测试 | 已完成 | 覆盖 Token 提取、列表分页、CLI、Skill 安装和数据迁移 |
@@ -44,9 +45,9 @@ GetbijiEx 用于把 biji.com（Get笔记/得到大脑）知识库中订阅博主
 
 ## 当前工作重点
 
-1. 修正不同窗口高度下的 GUI 可见性和布局细节。
-2. 在真实 Windows 设备上验证 GUI、Chrome Token 获取和导出全流程。
-3. 准备首个公开版本号与 Release 说明。
+1. 在真实 Windows 设备上验证 GUI、Chrome Token 获取和导出全流程。
+2. 准备首个公开版本号与 Release 说明，让普通用户可以直接下载稳定版本，而不是从 Actions 获取产物。
+3. 在 Intel Mac 上验证或提供 `x86_64` / universal2 构建。
 4. 缩减不再使用的历史依赖，降低打包体积。
 
 ## 已知限制

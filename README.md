@@ -1,236 +1,303 @@
 # GetbijiEx
 
-把 Get 笔记（biji.com）的笔记数据导出为 Markdown。  
+把 Get笔记（biji.com / 得到大脑）知识库里订阅博主的笔记，批量导出成 Markdown 和 JSON。
 
-## 项目文档
+**不会终端、不会 Python、只会用 Agent，也可以安装。直接看下面第一部分。**
 
-- [项目状态](docs/PROJECT_STATUS.md)：当前能力、验证基线、工作重点和已知限制
-- [路线图](docs/ROADMAP.md)：发布阶段、优先级和后续任务
-- [发布检查清单](docs/RELEASE_CHECKLIST.md)：测试、安全、GUI、CLI 和多平台发布验收
-- [技术决策记录](docs/DECISIONS.md)：关键架构选择及其原因
+---
 
-## 功能
+## 最简单的用法：把这段话复制给你的 Agent
 
-- **抖音号关注作者笔记导出**：通过API批量导出抖音号关注作者的全部笔记（含完整原文内容）
-- 自动分页获取所有笔记
-- 支持从 URL 自动解析参数
-- **自动获取 Token**：一键弹出 Chrome 自动捕获认证信息，首次登录一次即可（驱动系统 Chrome，登录态持久化）
-- **本地 GUI 小工具**：支持自动/手动保存 Token、自定义输出目录、导出 Markdown / JSON
-- **Agent 集成**：GetbijiEx 是双模式应用——双击打开 GUI，终端带参数调用 CLI（stdout 输出 JSON）；内置 Skill 可一键安装到 Claude Code 或 Codex，也可通过命令安装到其他 Agent 的 Skill 目录
+只要 Claude Code、Codex、WorkBuddy 或其他 Agent 能操作本机文件和终端，就可以用下面这段话代你完成安装。
 
-## Agent / CLI 用法
+> 点击代码块右上角的复制按钮，把整段复制给你的 Agent。不要自己执行里面的命令。
 
-打包后的 app 自带命令行模式（无需 Python 环境）：
+```text
+请直接帮我安装并配置 GetbijiEx，不要只告诉我步骤，请实际执行。
 
-```bash
-# macOS 打包版（路径按实际安装位置调整）
-"/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx" topics
+项目地址：https://github.com/Likely7/GetbijiEx
 
-# 源码版
-uv run python scripts/biji_cli.py topics
+请完成以下事情：
+1. 检查我的电脑是 macOS 还是 Windows，并确认已经安装 Git、Python 3.11+ 和 Chrome。
+2. 如果没有 uv，请帮我安装 uv。
+3. 把项目克隆到一个长期保留、以后不会随便移动的位置；如果已经克隆过，就更新到 main 最新版本。
+4. 在项目目录执行 uv sync。
+5. 找到“你这个 Agent 自己使用的 Skill 根目录”。不要让我猜路径，也不要默认一定是 Claude Code。请根据你自己的配置确认真实目录。
+6. 在 GetbijiEx 项目目录执行：
+   uv run python scripts/biji_cli.py install-skill --dir "你确认的 Skill 根目录"
+7. 检查安装后的 getbijiex/SKILL.md 是否存在，并确认里面已经没有 {{CLI_COMMAND}} 占位符。
+8. 告诉我安装结果，以及以后应该对你说什么才能导出笔记。
+9. 如果需要首次登录，请启动 GetbijiEx 图形界面，然后明确告诉我：请在弹出的 Chrome 窗口里登录 biji。登录这一步必须由我本人完成。
+
+如果你没有操作本机终端或文件的权限，请直接告诉我你缺少什么权限，不要假装安装成功。
 ```
 
-子命令（全部输出 JSON）：`topics`（知识库列表）、`follows <id_alias>`（博主列表）、`export --follow-id N --name X --alias Y`、`export-url <URL>`、`token`（刷新 Token）、`install-skill`。
+安装完成后，你可以直接对 Agent 说：
 
-### 安装 Agent Skill
-
-GUI 顶部的「Agent 集成」区域可以直接安装到 Claude Code 或 Codex。也可以在终端单独安装：
-
-```bash
-# 以下 CLI 代表打包版可执行文件；源码版把它替换为：
-# uv run python scripts/biji_cli.py
-CLI="/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx"
-
-# Claude Code：~/.claude/skills/getbijiex/SKILL.md
-"$CLI" install-skill
-
-# Codex：~/.codex/skills/getbijiex/SKILL.md
-"$CLI" install-skill --agent codex
-
-# 其他 Agent：指定其 Skill 根目录
-"$CLI" install-skill --dir "/path/to/agent/skills"
+```text
+帮我导出 Get笔记里「知识库名称」中的「博主名称」全部笔记。
 ```
 
-安装后，直接对 Agent 说“导出某某博主的 biji 笔记”即可。Skill 会调用本机 GetbijiEx，不需要打开 GUI。
+如果你不知道准确名称，也可以说：
 
-## 环境要求
+```text
+先列出我的 Get笔记知识库，再让我选择知识库和博主，最后帮我导出。
+```
+
+### 第一次使用会发生什么
+
+1. Agent 或软件会打开一个独立的 Chrome 窗口。
+2. 你需要在这个窗口里登录 biji，扫码或输入验证码都可以。
+3. 登录成功后，GetbijiEx 会自动获取所需凭证。
+4. 这个独立 Chrome 会保存 Cookie 和登录状态，通常不需要每次重新登录。
+5. Biji 的短期 Token 大约 30 分钟过期是正常现象，GetbijiEx 会利用保存的登录状态重新获取。
+
+---
+
+## 已经装好 GetbijiEx，只想单独安装 Skill
+
+有。Skill 的安装命令就是 `install-skill`。
+
+> **注意：Skill 不是导出软件本身。** Skill 只是告诉 Agent 怎么调用 GetbijiEx。电脑里必须同时保留 GetbijiEx 软件或源码，删掉以后 Skill 就无法导出。
+
+### 最省事：把这段话复制给 WorkBuddy 或其他 Agent
+
+```text
+请帮我把 GetbijiEx Skill 安装到你自己的 Skill 文件夹里。
+
+请先在我的电脑中找到 GetbijiEx：
+- 如果是源码版，找到包含 scripts/biji_cli.py 的 GetbijiEx 项目目录；
+- 如果是 macOS App，通常在 /Applications/GetbijiEx.app；
+- 如果是 Windows 版，找到 GetbijiEx.exe 所在目录。
+
+然后请你自己确认“你这个 Agent 实际使用的 Skill 根目录”，不要让我猜路径。
+
+确认后执行对应命令：
+
+源码版：
+uv run python scripts/biji_cli.py install-skill --dir "你的 Skill 根目录"
+
+macOS App：
+"/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx" install-skill --dir "你的 Skill 根目录"
+
+Windows：
+& "GetbijiEx.exe 的完整路径" install-skill --dir "你的 Skill 根目录"
+
+最后检查 Skill 根目录下是否生成 getbijiex/SKILL.md，并告诉我安装是否成功。
+如果你没有终端或本机文件权限，请直接说明，不能假装安装成功。
+```
+
+### 只想复制一条明确命令
+
+如果你的 Agent 已经知道自己的 Skill 根目录，把下面**对应电脑的一整行**复制给它，并告诉它把 `你的 Skill 根目录` 换成真实目录后执行。
+
+#### 源码版
+
+先进入 GetbijiEx 项目目录，再执行：
+
+```bash
+uv run python scripts/biji_cli.py install-skill --dir "/你的Agent/skills目录"
+```
+
+#### macOS App
+
+```bash
+"/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx" install-skill --dir "/你的Agent/skills目录"
+```
+
+#### Windows
+
+在 PowerShell 中执行：
+
+```powershell
+& "C:\你解压的位置\GetbijiEx\GetbijiEx.exe" install-skill --dir "C:\你的Agent\skills目录"
+```
+
+### Claude Code 和 Codex 有预设命令
+
+在 GetbijiEx 源码目录执行：
+
+```bash
+# Claude Code：安装到 ~/.claude/skills/getbijiex/
+uv run python scripts/biji_cli.py install-skill
+
+# Codex：安装到 ~/.codex/skills/getbijiex/
+uv run python scripts/biji_cli.py install-skill --agent codex
+```
+
+如果使用的是 macOS App，把命令前半部分换成：
+
+```bash
+"/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx" install-skill
+"/Applications/GetbijiEx.app/Contents/MacOS/GetbijiEx" install-skill --agent codex
+```
+
+---
+
+## 不用 Agent，直接下载软件
+
+目前可以从 GitHub Actions 下载自动构建的软件包：
+
+1. 打开 [Build packages 构建页面](https://github.com/Likely7/GetbijiEx/actions/workflows/build.yml)。
+2. 点击最上面带绿色对勾的构建记录。
+3. 滚动到页面底部的 **Artifacts**。
+4. 根据电脑下载：
+   - Mac：`GetbijiEx-macOS`
+   - Windows：`GetbijiEx-Windows`
+
+> GitHub 可能要求先登录才能下载 Actions 里的 Artifacts。正式 Release 发布后会改成更直接的下载方式。
+
+### Mac 安装
+
+1. 解压 `GetbijiEx-macOS`。
+2. 把 `GetbijiEx.app` 拖进“应用程序”。
+3. 双击打开。如果 macOS 阻止运行，就右键点击 App，选择“打开”，再确认一次。
+
+### Windows 安装
+
+1. 解压 `GetbijiEx-Windows`。
+2. **保留整个 GetbijiEx 文件夹，不要只拿走 exe。**
+3. 双击文件夹里的 `GetbijiEx.exe`。
+4. 如果 Windows 弹出 SmartScreen 提示，请确认软件来自本仓库后，选择“更多信息”→“仍要运行”。
+
+---
+
+## 图形界面怎么用
+
+打开 GetbijiEx 后，只做下面几步：
+
+1. 点击 **自动获取 Token**。
+2. 第一次使用时，在弹出的 Chrome 窗口里登录 biji。
+3. 登录完成后，软件会自动加载知识库；也可以点击 **加载知识库**。
+4. 选择知识库。
+5. 选择博主。
+6. 点击 **开始导出**。
+7. 等待进度条完成，软件会自动打开输出文件夹。
+
+默认数据位置：
+
+- macOS：`~/Library/Application Support/GetbijiEx/`
+- Windows：`%APPDATA%\GetbijiEx\`
+- Linux：`~/.local/share/GetbijiEx/`
+
+---
+
+## 常见问题
+
+### 为什么安装了 Skill 还是不能导出？
+
+Skill 只是 Agent 的调用说明，不包含 GetbijiEx 程序。请确认：
+
+- GetbijiEx App、exe 或源码仍然存在；
+- 安装 Skill 后没有移动或删除 GetbijiEx；
+- Agent 有执行本机命令和访问文件的权限；
+- 首次使用时已经在弹出的 Chrome 中登录 biji。
+
+### Token 为什么很快过期？
+
+Biji 的接口 Token 大约 30 分钟过期，这是正常现象，不代表 Cookie 登录状态也失效。GetbijiEx 会使用独立 Chrome 中保存的登录状态刷新 Token。
+
+### Agent 返回 `LoginRequired` 怎么办？
+
+直接对 Agent 说：
+
+```text
+请运行 GetbijiEx 的 token 子命令刷新 Token，成功后重试刚才的导出。
+```
+
+如果弹出登录窗口，请你本人完成登录。
+
+### 导出的文件在哪里？
+
+命令执行完成后会返回 `markdown_path` 和 `output_dir`。直接对 Agent 说：
+
+```text
+请告诉我刚才导出的 Markdown 完整路径，并帮我打开输出文件夹。
+```
+
+---
+
+<details>
+<summary><strong>给开发者：源码运行、CLI 和构建说明</strong></summary>
+
+## 源码环境
 
 - Python 3.11+
-- `uv`（依赖管理与运行）
-- Chrome（用于自动获取 Token）
-
-> **Windows / Linux 用户**：源码本身跨平台。按下方“安装”一节装好依赖后，运行 `uv run python scripts/gui_app.py` 即可；数据会保存在 `%APPDATA%\GetbijiEx`（Windows）或 `~/.local/share/GetbijiEx`（Linux）。仓库内同时提供 macOS、Windows 构建脚本，并通过 GitHub Actions 在对应系统生成安装包。
-
-## 安装
-
-推荐使用 `uv` 进行依赖管理：
+- `uv`
+- Chrome
 
 ```bash
-# 安装 uv (如果尚未安装)
-pip install uv
-
-# 同步依赖 (会自动创建虚拟环境并安装所有依赖)
-uv sync
+git clone https://github.com/Likely7/GetbijiEx.git
+cd GetbijiEx
+uv sync --dev
 ```
 
-或者使用 pip 手动安装：
-
-```bash
-pip install requests DrissionPage
-```
-
-## 快速开始
-
-### 图形界面版本（推荐）
-
-仓库现在提供一个本地小工具界面：
+启动 GUI：
 
 ```bash
 uv run python scripts/gui_app.py
 ```
 
-你可以在界面里：
-
-1. 点击“自动获取 Token”
-2. 首次使用：在弹出的 Chrome 登录窗口中登录 biji；登录成功后工具会自动进入知识库页面、捕获并保存 Token
-3. 之后再用：点击一次按钮即可；独立 Chrome 配置会保留登录态，不需要每次重新登录
-4. （兜底）也可以手动从 DevTools 复制 `authorization` / `xi-csrf-token` 粘贴后点“保存 Token”
-5. Token 保存后会自动加载知识库列表（也可手动点“加载知识库”）
-6. 在下拉框里选择知识库 → 自动列出该库的博主 → 选择要导出的博主
-7. 按需选择任意输出目录（也可恢复默认目录）
-8. 点击“开始导出”
-
-（兜底）也可以在“手动模式”里直接粘贴博主页面 URL、可选填 `topic_id` 导出。
-
-应用数据会写到：
-
-```text
-~/Library/Application Support/GetbijiEx/
-```
-
-其中包括：
-- `config/biji_auth.json`
-- `data/biji_export/`
-- `logs/`
-
-### 打包成可双击启动的 macOS 应用
-
-如果你不想每次通过命令行启动，可以构建 `.app`：
+查看 CLI：
 
 ```bash
-chmod +x build_macos_app.sh
+uv run python scripts/biji_cli.py --help
+```
+
+主要子命令：
+
+```text
+topics
+follows <id_alias>
+export --follow-id N --name X --alias Y
+export-url <URL>
+token
+install-skill
+```
+
+CLI 的 stdout 只输出 JSON，过程日志写入 stderr，供 Agent 稳定解析。
+
+## macOS 构建
+
+```bash
 ./build_macos_app.sh
 ```
 
-构建完成后，应用位于：
+输出：`dist/GetbijiEx.app`
 
-```text
-dist/GetbijiEx.app
-```
+## Windows 构建
 
-之后可直接在 Finder 中双击打开。
-
-打包后的 `.app` 与源码版使用相同的 Token 获取流程：
-
-1. 点击“自动获取 Token”
-2. 首次使用时在自动弹出的登录窗口中登录 biji，工具随后自动捕获并保存 Token
-3. 后续点击一次即可；只有登录态真正失效时才需要再次登录
-4. （兜底）也可以手动从 DevTools 复制 `authorization` / `xi-csrf-token` 粘贴保存
-5. 选择知识库和博主后执行导出
-
-### Windows 可执行文件
-
-Windows 需要在 Windows 环境中构建，不能由 macOS 交叉打包：
+在 Windows PowerShell 中执行：
 
 ```powershell
 .\build_windows.ps1
 ```
 
-构建结果位于 `dist\GetbijiEx\GetbijiEx.exe`。仓库的 GitHub Actions 工作流也会同时构建 macOS 与 Windows 压缩包，方便直接下载分发。
+输出：`dist\GetbijiEx\GetbijiEx.exe`
 
-### 命令行版本
+PyInstaller 不能从 macOS 直接交叉构建 Windows 应用。仓库中的 GitHub Actions 会在对应系统分别构建。
 
-#### 1. 配置认证信息
-
-最简单的方法是使用自动化脚本：
+## 自动化测试
 
 ```bash
-python scripts/refresh_token_browser.py
-# 或使用 uv 运行
-uv run scripts/refresh_token_browser.py
+uv run pytest -q
 ```
 
-脚本会自动打开一个独立的 Chrome 窗口：
-1. 首次使用时请在自动弹出的窗口中登录 biji.com
-2. 登录成功后，工具会自动打开知识库页面并捕获 Token
-3. Token 会保存到 GetbijiEx 应用数据目录的 `config/biji_auth.json`
-4. 独立 Chrome 配置会保留 Cookie 和登录态；下次刷新短期 Token 通常不需要重新登录
+</details>
 
-**备选方案（手动抓包）：**
+---
 
-如果自动化脚本无法工作，可以运行手动引导模式：
+## 项目管理文档
 
-```bash
-python scripts/biji_export.py --update-token
-```
+以下内容主要给维护者和开发者看，普通用户不需要阅读：
 
-#### 2. 导出笔记
-
-```bash
-# 从 URL 导出
-python scripts/biji_export.py "https://www.biji.com/subject/BJ8XV7AJ/DEFAULT?followId=1077890&followName=第四种黑猩猩"
-
-# 指定 topic-id（当自动获取失败时）
-python scripts/biji_export.py "https://www.biji.com/subject/20jqglxY/DEFAULT?followId=1109306" --topic-id 2362709
-```
-
-#### 3. 输出
-
-导出的 Markdown 文件默认保存在 `data/biji_export/` 目录；GUI 模式下也可以自行指定输出目录。
-
-```text
-data/biji_export/
-├── 第四种黑猩猩_完整导出_20260207.md
-├── AI樟榆树_完整导出_20260207.md
-└── ...
-```
-
-## 目录结构
-
-```text
-GetbijiEx/
-├── config/
-│   └── biji_auth.json      # 认证配置 (自动生成)
-├── data/
-│   └── biji_export/        # 导出文件
-├── scripts/
-│   ├── biji_export.py      # 主导出脚本
-│   ├── gui_app.py          # 本地 GUI 小工具
-│   └── refresh_token_browser.py  # 源码模式浏览器自动化 Token 刷新工具
-├── .env.example            # 环境变量示例
-└── README.md
-```
-
-## 常见问题
-
-### Token 过期
-
-Biji 接口使用的 JWT 大约 30 分钟过期，这是正常现象；GetbijiEx 的独立 Chrome 配置会长期保存 Cookie 和网站登录态，因此刷新 JWT 通常只需要几秒，不等于每次都要重新登录。
-
-- GUI / 打包 app：加载知识库时遇到过期会自动刷新并重试一次，也可以手动点击“自动获取 Token”
-- 命令行 / Agent：运行 `token` 子命令，成功后重试原命令
-- 只有 biji 网站登录态本身失效时，才需要在弹出的 Chrome 中重新登录
-
-### 获取 topic_id
-
-如果脚本无法自动获取 `topic_id`，可以：
-
-1. 在浏览器中打开目标页面
-2. 打开 DevTools → Network
-3. 查找 `topic/detail` 或相关 posts 请求，从请求参数 / 请求体中获取 `topic_id`
-4. 在 GUI 中填写 Topic ID，或在命令行使用 `--topic-id`
+- [项目状态](docs/PROJECT_STATUS.md)
+- [路线图](docs/ROADMAP.md)
+- [发布检查清单](docs/RELEASE_CHECKLIST.md)
+- [技术决策记录](docs/DECISIONS.md)
 
 ## 安全提示
 
-- 不要把认证信息（`config/biji_auth.json` 或 `.env`）提交到 git
-- `config/` 和 `data/` 目录已在 `.gitignore` 中忽略
+- 不要公开或提交 `config/biji_auth.json`、`.env`、Token、Cookie。
+- 本项目不会把你的 Biji 登录信息上传到本仓库。
+- 登录数据保存在你自己电脑的 GetbijiEx 应用数据目录中。
