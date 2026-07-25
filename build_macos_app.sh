@@ -8,17 +8,7 @@ BUILD_DIR="$ROOT/build"
 
 cd "$ROOT"
 uv sync --dev
-uv run playwright install chromium
-uv run pyinstaller \
-  --noconfirm \
-  --windowed \
-  --name "$APP_NAME" \
-  --paths "$ROOT" \
-  --add-data "$ROOT/scripts:./scripts" \
-  --hidden-import scripts.app_paths \
-  --hidden-import scripts.biji_export \
-  --hidden-import scripts.refresh_token_browser \
-  scripts/gui_app.py
+uv run pyinstaller --noconfirm "$ROOT/$APP_NAME.spec"
 
 echo "\n构建完成：$DIST_DIR/$APP_NAME.app"
 echo "可直接在 Finder 中双击打开。"

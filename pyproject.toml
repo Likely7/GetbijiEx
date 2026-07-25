@@ -11,7 +11,6 @@ dependencies = [
     "requests>=2.32.5",
     "weasyprint>=62.0",
     "markdown>=3.5",
-    "playwright>=1.55.0",
 ]
 
 [dependency-groups]

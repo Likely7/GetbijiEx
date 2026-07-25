@@ -7,14 +7,14 @@
 - **抖音号关注作者笔记导出**：通过API批量导出抖音号关注作者的全部笔记（含完整原文内容）
 - 自动分页获取所有笔记
 - 支持从 URL 自动解析参数
-- **自动认证刷新**：源码模式提供浏览器自动化脚本，一键获取有效 Token
-- **本地 GUI 小工具**：支持手动保存 Token、自定义输出目录、导出 Markdown / JSON
+- **自动获取 Token**：一键弹出 Chrome 自动捕获认证信息，首次登录一次即可（驱动系统 Chrome，登录态持久化）
+- **本地 GUI 小工具**：支持自动/手动保存 Token、自定义输出目录、导出 Markdown / JSON
 
 ## 环境要求
 
 - Python 3.11+
 - `uv`（依赖管理与运行）
-- Chrome / Chromium（用于源码模式自动抓 token）
+- Chrome（用于自动获取 Token）
 
 ## 安装
 
@@ -24,18 +24,14 @@
 # 安装 uv (如果尚未安装)
 pip install uv
 
-# 同步依赖 (会自动创建虚拟环境并安装所有依赖，包括 playwright)
+# 同步依赖 (会自动创建虚拟环境并安装所有依赖)
 uv sync
-
-# 安装浏览器驱动 (仅首次运行需要)
-uv run playwright install chromium
 ```
 
 或者使用 pip 手动安装：
 
 ```bash
-pip install requests playwright
-playwright install chromium
+pip install requests DrissionPage
 ```
 
 ## 快速开始
@@ -50,10 +46,10 @@ uv run python scripts/gui_app.py
 
 你可以在界面里：
 
-1. 点击“打开 biji 登录页”
-2. 在浏览器中登录 biji，并打开任意一篇笔记
-3. 打开 DevTools → Network，找到 `knowledge-api.trytalks.com` 请求
-4. 复制 `authorization`、`xi-csrf-token`，粘贴回工具并点击“保存 Token”
+1. 点击“自动获取 Token”
+2. 首次使用：在弹出的 Chrome 中登录 biji，并打开任意一篇笔记；工具会自动捕获并保存 Token
+3. 之后再用：点一下按钮即可，无需重复登录
+4. （兜底）也可以手动从 DevTools 复制 `authorization` / `xi-csrf-token` 粘贴后点“保存 Token”
 5. 粘贴 biji 博主页面 URL
 6. 可选填写 `topic_id`
 7. 按需选择任意输出目录（也可恢复默认目录）
@@ -87,14 +83,13 @@ dist/Biji导出小工具.app
 
 之后可直接在 Finder 中双击打开。
 
-打包后的 `.app` 里，Token 获取流程是：
+打包后的 `.app` 里，Token 获取流程与源码模式相同：
 
-1. 点击“打开 biji 登录页”
-2. 在系统浏览器里登录 biji，并打开任意笔记
-3. 在浏览器 DevTools 的 Network 面板里找到 `knowledge-api.trytalks.com` 请求
-4. 复制 `authorization`、`xi-csrf-token`，回到 app 粘贴
-5. 点击“保存 Token”
-6. 再执行导出
+1. 点击“自动获取 Token”
+2. 首次使用：在弹出的 Chrome 中登录 biji，并打开任意一篇笔记；工具会自动捕获并保存 Token
+3. 之后再用：点一下按钮即可
+4. （兜底）也可以手动从 DevTools 复制 `authorization` / `xi-csrf-token` 粘贴保存
+5. 再执行导出
 
 ### 命令行版本
 
@@ -165,7 +160,7 @@ get-biji-export/
 
 当遇到 `401 Unauthorized` 或 `500 Server Error` 时，通常是 Token 过期。
 
-- GUI / 打包 app：重新打开 biji 登录页，复制新的 `authorization` / `xi-csrf-token` 后点“保存 Token”
+- GUI / 打包 app：再点一次“自动获取 Token”即可；抓不到时手动复制新的 `authorization` / `xi-csrf-token` 后点“保存 Token”
 - 命令行 / 源码模式：重新运行 `scripts/refresh_token_browser.py`
 
 ### 获取 topic_id

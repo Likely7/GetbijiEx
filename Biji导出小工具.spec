@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['scripts/gui_app.py'],
-    pathex=['/Users/macbook/Downloads/getbiji_dy_export'],
+    pathex=['/Users/macbook/Documents/getbiji_dy_export'],
     binaries=[],
-    datas=[('/Users/macbook/Downloads/getbiji_dy_export/scripts', './scripts')],
-    hiddenimports=['scripts.app_paths', 'scripts.biji_export', 'scripts.refresh_token_browser'],
+    datas=[('/Users/macbook/Documents/getbiji_dy_export/scripts', './scripts')],
+    hiddenimports=['scripts.app_paths', 'scripts.biji_export', 'scripts.auto_token'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
