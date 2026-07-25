@@ -351,7 +351,7 @@ def export_to_markdown(full_data: list, author_name: str, output_dir: Path) -> s
     return str(md_path)
 
 
-def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path | None = None):
+def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path | None = None, progress=None):
     """从博主页面 URL 导出笔记"""
     print(f"解析 URL: {url}")
 
@@ -369,6 +369,7 @@ def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path
         topic_id_alias,
         topic_id_override=topic_id_override,
         output_dir=output_dir,
+        progress=progress,
     )
 
 
@@ -378,8 +379,9 @@ def export_notes_core(
     topic_id_alias: str,
     topic_id_override: int = None,
     output_dir: str | Path | None = None,
+    progress=None,
 ):
-    """导出笔记主流程"""
+    """导出笔记主流程。progress(current, total, title) 可选进度回调。"""
     target_output_dir = Path(output_dir).expanduser() if output_dir else OUTPUT_DIR
     target_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -406,11 +408,14 @@ def export_notes_core(
         raise ExportError("未找到笔记")
 
     full_data = []
+    total = len(posts)
     print("获取笔记详情...")
     for i, post in enumerate(posts):
         post_id = post.get("post_id")
         title = post.get("post_title", "Untitled") or post.get("post_name", "Untitled")
-        print(f"[{i+1}/{len(posts)}] 获取: {title[:50]}...")
+        print(f"[{i+1}/{total}] 获取: {title[:50]}...")
+        if progress:
+            progress(i + 1, total, title)
 
         detail = fetch_post_detail(post_id, topic_id_alias)
         if detail:

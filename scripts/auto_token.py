@@ -4,6 +4,8 @@
 - extract_auth: 纯逻辑，从请求头提取 Token（可单测）
 - capture_token: 浏览器流程
 """
+import os
+import sys
 import time
 from pathlib import Path
 from typing import Callable
@@ -19,16 +21,35 @@ API_DOMAIN = "knowledge-api.trytalks.com"
 FIRST_LOGIN_HINT_SECONDS = 120
 # 空闲监听超过这个秒数就自动把页面导航回知识库页面，重新触发请求
 RENAVIGATE_SECONDS = 30
-# 调试端口：避开 9222（用户日常 Chrome 的远程调试端口）。
-# 注意：不能用 auto_port()——它会为每次启动创建临时用户目录，登录态无法持久化。
-DEBUG_PORT = 9333
 # 总时长上限，避免界面永远卡在等待状态
 MAX_TOTAL_SECONDS = 900
 
-CHROME_CANDIDATES = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    str(Path.home() / "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-]
+
+def _chrome_candidates() -> list:
+    """各平台常见的 Chrome 可执行文件路径"""
+    if sys.platform == "darwin":
+        return [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            str(Path.home() / "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        ]
+    if sys.platform.startswith("win"):
+        return [
+            os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), r"Google\Chrome\Application\chrome.exe"),
+            os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), r"Google\Chrome\Application\chrome.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe"),
+        ]
+    return [
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+    ]
+
+
+# 调试端口候选：避开 9222（常见的远程调试占用）。
+# 注意：不能用 auto_port()——它会为每次启动创建临时用户目录，登录态无法持久化。
+# 持久化和端口无关，逐个端口尝试即可兼顾稳定性。
+DEBUG_PORTS = (9333, 9334, 9335, 9336, 9337)
 
 
 class TokenCaptureError(Exception):
@@ -59,8 +80,8 @@ def extract_auth(headers: dict) -> dict | None:
 
 def chrome_path() -> str | None:
     """返回系统 Chrome 可执行文件路径，找不到返回 None。"""
-    for candidate in CHROME_CANDIDATES:
-        if Path(candidate).exists():
+    for candidate in _chrome_candidates():
+        if candidate and Path(candidate).exists():
             return candidate
     return None
 
@@ -96,11 +117,20 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
     if not executable:
         raise ChromeNotFoundError("未找到 Chrome，请安装 Chrome，或改用手动粘贴 Token")
 
-    options = ChromiumOptions().set_browser_path(executable)
-    options.set_user_data_path(str(chrome_profile_dir()))
-    # 固定调试端口（避开日常 Chrome 占用的 9222）。
-    # 上次异常退出留下僵尸浏览器时会自动接管，行为也正确。
-    options.set_local_port(DEBUG_PORT)
+    page = None
+    last_error = None
+    for port in DEBUG_PORTS:
+        options = ChromiumOptions().set_browser_path(executable)
+        options.set_user_data_path(str(chrome_profile_dir()))
+        # 上次异常退出留下僵尸浏览器时会自动接管，行为也正确
+        options.set_local_port(port)
+        try:
+            page = ChromiumPage(options)
+            break
+        except Exception as exc:
+            last_error = exc
+    if page is None:
+        raise TokenCaptureError(f"启动 Chrome 失败：{last_error}")
 
     try:
         page = ChromiumPage(options)

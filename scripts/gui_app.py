@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import queue
 import subprocess
 import sys
@@ -118,11 +119,14 @@ class App:
         self.export_button = ttk.Button(export_frame, text="开始导出", command=self.handle_export)
         self.export_button.grid(row=2, column=1, sticky="w", pady=(12, 0))
 
-        ttk.Separator(export_frame, orient="horizontal").grid(row=3, column=0, columnspan=2, sticky="ew", pady=(14, 8))
-        ttk.Label(export_frame, text="手动模式（可选）：粘贴 Biji 博主 URL").grid(row=4, column=0, columnspan=2, sticky="w")
-        ttk.Entry(export_frame, textvariable=self.url_var, width=88).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(4, 6))
-        ttk.Label(export_frame, text="Topic ID（可选）").grid(row=6, column=0, sticky="w")
-        ttk.Entry(export_frame, textvariable=self.topic_id_var, width=24).grid(row=6, column=1, sticky="w", padx=(12, 0))
+        self.progress = ttk.Progressbar(export_frame, mode="indeterminate")
+        self.progress.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
+
+        ttk.Separator(export_frame, orient="horizontal").grid(row=4, column=0, columnspan=2, sticky="ew", pady=(14, 8))
+        ttk.Label(export_frame, text="手动模式（可选）：粘贴 Biji 博主 URL").grid(row=5, column=0, columnspan=2, sticky="w")
+        ttk.Entry(export_frame, textvariable=self.url_var, width=88).grid(row=6, column=0, columnspan=2, sticky="ew", pady=(4, 6))
+        ttk.Label(export_frame, text="Topic ID（可选）").grid(row=7, column=0, sticky="w")
+        ttk.Entry(export_frame, textvariable=self.topic_id_var, width=24).grid(row=7, column=1, sticky="w", padx=(12, 0))
 
         export_frame.columnconfigure(1, weight=1)
 
@@ -357,6 +361,8 @@ class App:
 
         output = self.output_dir_var.get().strip() or None
         self.set_busy(True, "正在导出笔记...")
+        self.progress.configure(mode="indeterminate", value=0)
+        self.progress.start(15)
         self.append_log(f"开始导出：{target_desc}")
         threading.Thread(
             target=self._export_worker,
@@ -365,6 +371,9 @@ class App:
         ).start()
 
     def _export_worker(self, url, topic_id, output, follow=None, topic=None):
+        def on_progress(current, total, title):
+            self._call_ui(self._export_progress, current, total, title)
+
         try:
             if follow is not None:
                 result = biji_export.export_notes_core(
@@ -373,17 +382,29 @@ class App:
                     topic["id_alias"],
                     topic_id_override=topic_id if topic_id is not None else follow.get("topic_id"),
                     output_dir=output,
+                    progress=on_progress,
                 )
             else:
                 result = biji_export.export_notes(
-                    url, topic_id_override=topic_id, output_dir=output
+                    url, topic_id_override=topic_id, output_dir=output,
+                    progress=on_progress,
                 )
         except Exception as exc:
             self._call_ui(self._export_done, None, str(exc))
         else:
             self._call_ui(self._export_done, result, None)
 
+    def _export_progress(self, current, total, title):
+        if str(self.progress.cget("mode")) == "indeterminate":
+            self.progress.stop()
+            self.progress.configure(mode="determinate", maximum=total)
+        self.progress.configure(value=current)
+        short = title.replace("\n", " ")[:20]
+        self.status_var.set(f"正在导出 {current}/{total}：{short}")
+
     def _export_done(self, result, error):
+        self.progress.stop()
+        self.progress.configure(mode="determinate", value=0)
         self.set_busy(False, "准备就绪")
         self.refresh_auth_status()
         if error is not None:
@@ -394,6 +415,7 @@ class App:
         self.append_log(f"输出目录：{result['output_dir']}")
         self.append_log(f"Markdown：{result['markdown_path']}")
         self.append_log(f"JSON：{result['json_path']}")
+        self.open_path(result["output_dir"])
         messagebox.showinfo("导出完成", f"已导出 {result['count']} 条笔记\n\n输出目录:\n{result['output_dir']}\n\nMarkdown:\n{result['markdown_path']}")
 
     def choose_output_dir(self):
@@ -408,9 +430,21 @@ class App:
         self.append_log(f"已恢复默认输出目录：{default_dir}")
 
     def open_output_dir(self):
-        path = Path(self.output_dir_var.get()).expanduser()
+        self.open_path(self.output_dir_var.get())
+
+    def open_path(self, path):
+        """在系统文件管理器中打开目录（跨平台）"""
+        path = Path(path).expanduser()
         path.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["open", str(path)], check=False)
+        try:
+            if sys.platform == "darwin":
+                subprocess.run(["open", str(path)], check=False)
+            elif sys.platform.startswith("win"):
+                os.startfile(str(path))
+            else:
+                subprocess.run(["xdg-open", str(path)], check=False)
+        except Exception as exc:
+            self.append_log(f"⚠️ 无法自动打开目录：{exc}")
 
 
 def main():
