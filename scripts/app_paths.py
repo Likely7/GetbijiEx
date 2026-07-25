@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import sys
 
 
@@ -22,7 +23,14 @@ def resources_root() -> Path:
 
 
 def user_data_root() -> Path:
-    root = Path.home() / "Library" / "Application Support" / "BijiExportApp"
+    """应用数据目录（跨平台）"""
+    if sys.platform == "darwin":
+        root = Path.home() / "Library" / "Application Support" / "BijiExportApp"
+    elif sys.platform.startswith("win"):
+        base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+        root = Path(base) / "BijiExportApp"
+    else:
+        root = Path.home() / ".local" / "share" / "BijiExportApp"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

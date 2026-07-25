@@ -16,6 +16,8 @@
 - `uv`（依赖管理与运行）
 - Chrome（用于自动获取 Token）
 
+> **Windows / Linux 用户**：仓库内的打包脚本生成的是 macOS `.app`，但源码本身是跨平台的——按下方"安装"一节装好依赖后，直接 `uv run python scripts/gui_app.py` 即可使用；数据会存到 `%APPDATA%\BijiExportApp`（Windows）或 `~/.local/share/BijiExportApp`（Linux）。如需 Windows 可执行文件，在 Windows 上自行运行 PyInstaller 打包即可。
+
 ## 安装
 
 推荐使用 `uv` 进行依赖管理：
