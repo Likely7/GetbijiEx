@@ -1,5 +1,5 @@
 """
-把本工具的 Agent Skill 安装到 ~/.claude/skills/biji-export/SKILL.md。
+把 GetbijiEx 的 Skill 安装到 Claude Code、Codex 或自定义 Agent 目录。
 
 模板在仓库 skill/SKILL.md，其中的 {{CLI_COMMAND}} 会被替换为
 当前环境的真实调用方式：
@@ -12,7 +12,17 @@ from pathlib import Path
 
 from scripts.app_paths import is_frozen, project_root, resources_root
 
-SKILL_NAME = "biji-export"
+SKILL_NAME = "getbijiex"
+
+# 各 Agent 的 Skill 安装根目录（相对 home）
+AGENT_SKILL_DIRS = {
+    "claude": ".claude/skills",
+    "codex": ".codex/skills",
+}
+
+
+class UnsupportedAgentError(ValueError):
+    pass
 
 
 def cli_command() -> str:
@@ -22,14 +32,24 @@ def cli_command() -> str:
     return f"cd {shlex.quote(str(root))} && uv run python scripts/biji_cli.py"
 
 
-def skill_target() -> Path:
-    return Path.home() / ".claude" / "skills" / SKILL_NAME / "SKILL.md"
+def skill_target(agent: str = "claude", target_dir: str | None = None) -> Path:
+    if target_dir:
+        base = Path(target_dir).expanduser()
+    else:
+        try:
+            base = Path.home() / AGENT_SKILL_DIRS[agent]
+        except KeyError as exc:
+            supported = "、".join(AGENT_SKILL_DIRS)
+            raise UnsupportedAgentError(
+                f"不支持的 Agent：{agent}。支持：{supported}；其他 Agent 请使用 --dir。"
+            ) from exc
+    return base / SKILL_NAME / "SKILL.md"
 
 
-def install_skill() -> Path:
+def install_skill(agent: str = "claude", target_dir: str | None = None) -> Path:
     template_path = resources_root() / "skill" / "SKILL.md"
     template = template_path.read_text(encoding="utf-8")
-    target = skill_target()
+    target = skill_target(agent, target_dir)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(template.replace("{{CLI_COMMAND}}", cli_command()), encoding="utf-8")
     return target

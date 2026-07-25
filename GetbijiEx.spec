@@ -1,13 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+from pathlib import Path
+
+
+ROOT = Path(SPECPATH)
+IS_MACOS = sys.platform == 'darwin'
+
 
 a = Analysis(
-    ['scripts/main.py'],
-    pathex=['/Users/macbook/Documents/getbiji_dy_export'],
+    [str(ROOT / 'scripts' / 'main.py')],
+    pathex=[str(ROOT)],
     binaries=[],
     datas=[
-        ('/Users/macbook/Documents/getbiji_dy_export/scripts', './scripts'),
-        ('/Users/macbook/Documents/getbiji_dy_export/skill', './skill'),
+        (str(ROOT / 'scripts'), './scripts'),
+        (str(ROOT / 'skill'), './skill'),
     ],
     hiddenimports=[
         'scripts.app_paths',
@@ -31,7 +38,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Biji导出小工具',
+    name='GetbijiEx',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -50,11 +57,12 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Biji导出小工具',
+    name='GetbijiEx',
 )
-app = BUNDLE(
-    coll,
-    name='Biji导出小工具.app',
-    icon=None,
-    bundle_identifier=None,
-)
+if IS_MACOS:
+    app = BUNDLE(
+        coll,
+        name='GetbijiEx.app',
+        icon=None,
+        bundle_identifier=None,
+    )

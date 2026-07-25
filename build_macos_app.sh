@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="Biji导出小工具"
+APP_NAME="GetbijiEx"
 DIST_DIR="$ROOT/dist"
 BUILD_DIR="$ROOT/build"
 

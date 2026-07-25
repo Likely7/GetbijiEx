@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from scripts import biji_cli, biji_export
+from scripts import biji_cli, biji_export, skill_installer
 
 
 def run_cli(argv, capsys):
@@ -73,3 +73,33 @@ def test_export_writes_progress_to_stderr(monkeypatch, capsys):
     assert code is None
     assert data["author_name"] == "博主"
     assert data["markdown_path"] == "m"
+
+
+def test_install_skill_passes_agent_and_directory(monkeypatch, capsys, tmp_path):
+    custom_dir = tmp_path / "agent-skills"
+    expected = custom_dir / "getbijiex" / "SKILL.md"
+    called = {}
+
+    def fake_install_skill(agent="claude", target_dir=None):
+        called.update(agent=agent, target_dir=target_dir)
+        return expected
+
+    monkeypatch.setattr(
+        __import__("sys"),
+        "argv",
+        [
+            "biji_cli",
+            "install-skill",
+            "--agent",
+            "codex",
+            "--dir",
+            str(custom_dir),
+        ],
+    )
+    monkeypatch.setattr(skill_installer, "install_skill", fake_install_skill)
+
+    data, code = run_cli(None, capsys)
+
+    assert code is None
+    assert called == {"agent": "codex", "target_dir": str(custom_dir)}
+    assert data == {"ok": True, "skill_path": str(expected)}

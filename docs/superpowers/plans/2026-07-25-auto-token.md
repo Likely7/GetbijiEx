@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 用户数据目录一律通过 `scripts/app_paths.py` 的 `user_data_root()` 获取（`~/Library/Application Support/BijiExportApp/`），不写死路径。
+- 用户数据目录一律通过 `scripts/app_paths.py` 的 `user_data_root()` 获取（`~/Library/Application Support/GetbijiEx/`），不写死路径。
 - Token 保存必须复用 `scripts/biji_export.py` 的 `save_auth_config(config: dict)`，config 结构为 `{"authorization", "xi-csrf-token", "x-appid"}`。
 - 手动粘贴 Token 的 GUI 入口保留，不删。
 - 项目用 `uv` 管理依赖，运行测试用 `uv run pytest`，运行脚本用 `uv run python ...`。
@@ -326,7 +326,7 @@ Run: `uv run python scripts/refresh_token_browser.py`
 Expected:
 - 弹出 Chrome 窗口打开 biji.com
 - 未登录时在浏览器里登录并打开一篇笔记后，终端输出"✅ 已捕获并保存 Token"，浏览器自动关闭
-- `cat ~/Library/Application\ Support/BijiExportApp/config/biji_auth.json` 能看到新 Token
+- `cat ~/Library/Application\ Support/GetbijiEx/config/biji_auth.json` 能看到新 Token
 
 再跑一次确认已登录状态下无需操作即可抓到。
 
@@ -500,15 +500,15 @@ git commit -m "feat: auto token button in GUI, run capture and export in backgro
 ### Task 4: 打包修复、依赖清理与整体验证
 
 **Files:**
-- Modify: `Biji导出小工具.spec`（路径错误修复 + hiddenimports 更新）
+- Modify: `GetbijiEx.spec`（路径错误修复 + hiddenimports 更新）
 - Modify: `pyproject.toml`（移除 playwright）
 - Modify: `README.md`（更新 Token 获取说明）
 
 **Interfaces:**
 - Consumes: 前三个任务的全部产出。
-- Produces: 可用的 `dist/Biji导出小工具.app`。
+- Produces: 可用的 `dist/GetbijiEx.app`。
 
-背景：`Biji导出小工具.spec` 里的 `pathex` 和 `datas` 指向 `/Users/macbook/Downloads/getbiji_dy_export`（**错误路径**，项目在 Documents 下），且 `hiddenimports` 包含已改为薄壳的 `scripts.refresh_token_browser`。
+背景：`GetbijiEx.spec` 里的 `pathex` 和 `datas` 指向 `<repo-root>`（**错误路径**，项目在 Documents 下），且 `hiddenimports` 包含已改为薄壳的 `scripts.refresh_token_browser`。
 
 - [ ] **Step 1: 确认 playwright 已无引用**
 
@@ -525,26 +525,26 @@ Run: `uv run python -c "from scripts.auto_token import capture_token; print('ok'
 
 - [ ] **Step 3: 修复 spec 文件**
 
-将 `Biji导出小工具.spec` 中：
+将 `GetbijiEx.spec` 中：
 
 ```python
-    pathex=['/Users/macbook/Downloads/getbiji_dy_export'],
+    pathex=['<repo-root>'],
 ```
 
 改为：
 
 ```python
-    pathex=['/Users/macbook/Documents/getbiji_dy_export'],
+    pathex=['<repo-root>'],
 ```
 
 ```python
-    datas=[('/Users/macbook/Downloads/getbiji_dy_export/scripts', './scripts')],
+    datas=[('<repo-root>/scripts', './scripts')],
 ```
 
 改为：
 
 ```python
-    datas=[('/Users/macbook/Documents/getbiji_dy_export/scripts', './scripts')],
+    datas=[('<repo-root>/scripts', './scripts')],
 ```
 
 ```python
@@ -560,11 +560,11 @@ Run: `uv run python -c "from scripts.auto_token import capture_token; print('ok'
 - [ ] **Step 4: 重新打包**
 
 Run: `./build_macos_app.sh`
-Expected: 成功生成 `dist/Biji导出小工具.app`，无 ImportError。若报 DrissionPage 相关模块缺失，在 spec 的 `hiddenimports` 补上对应模块名后重跑。
+Expected: 成功生成 `dist/GetbijiEx.app`，无 ImportError。若报 DrissionPage 相关模块缺失，在 spec 的 `hiddenimports` 补上对应模块名后重跑。
 
 - [ ] **Step 5: 手动验证打包版（需要用户配合）**
 
-双击打开 `dist/Biji导出小工具.app`：
+双击打开 `dist/GetbijiEx.app`：
 - 点"自动获取 Token"→ 几秒内自动抓到（chrome_profile 已在本机有登录态）
 - 用新 Token 导出一次笔记，确认可用
 

@@ -20,7 +20,7 @@ from scripts.app_paths import output_dir, user_data_root
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Biji 导出小工具")
+        self.root.title("GetbijiEx")
         self.root.geometry("760x960")
 
         self.url_var = tk.StringVar()
@@ -58,12 +58,12 @@ class App:
         main = ttk.Frame(self.root, padding=16)
         main.pack(fill="both", expand=True)
 
-        title = ttk.Label(main, text="Biji 导出小工具", font=("Arial", 18, "bold"))
+        title = ttk.Label(main, text="GetbijiEx", font=("Arial", 18, "bold"))
         title.pack(anchor="w")
 
         desc = ttk.Label(
             main,
-            text="输入博主页面 URL，一键保存 Token、导出 Markdown。",
+            text="选择知识库和博主，一键导出 Markdown / JSON。",
         )
         desc.pack(anchor="w", pady=(4, 16))
 
@@ -104,6 +104,28 @@ class App:
         ttk.Label(token_form, text="x-appid").grid(row=2, column=0, sticky="w")
         ttk.Entry(token_form, textvariable=self.appid_var, width=16).grid(row=2, column=1, sticky="w", padx=(10, 0))
 
+        agent_frame = ttk.LabelFrame(main, text="Agent 集成（可选）", padding=12)
+        agent_frame.pack(fill="x", pady=(16, 0))
+
+        agent_row = ttk.Frame(agent_frame)
+        agent_row.pack(fill="x")
+        ttk.Button(
+            agent_row,
+            text="安装 Skill 到 Claude Code",
+            command=lambda: self.handle_install_skill("claude"),
+        ).pack(side="left")
+        ttk.Button(
+            agent_row,
+            text="安装到 Codex",
+            command=lambda: self.handle_install_skill("codex"),
+        ).pack(side="left", padx=(8, 0))
+        ttk.Label(
+            agent_frame,
+            text="安装后 Agent 可直接调用 GetbijiEx 导出笔记，不用打开本软件；其他 Agent 可使用命令行自定义安装目录。",
+            wraplength=680,
+            justify="left",
+        ).pack(anchor="w", pady=(8, 0))
+
         export_frame = ttk.LabelFrame(main, text="2. 导出笔记", padding=12)
         export_frame.pack(fill="x", pady=(16, 0))
 
@@ -140,21 +162,10 @@ class App:
         ttk.Button(output_frame, text="恢复默认目录", command=self.reset_output_dir).pack(anchor="w", pady=(8, 0))
         ttk.Button(output_frame, text="打开输出目录", command=self.open_output_dir).pack(anchor="w", pady=(8, 0))
 
-        agent_frame = ttk.LabelFrame(main, text="4. Agent 集成（可选）", padding=12)
-        agent_frame.pack(fill="x", pady=(16, 0))
-
-        ttk.Label(
-            agent_frame,
-            text="安装后，Claude Code 等 Agent 可以直接调用本工具导出笔记，不用打开本软件。",
-            wraplength=680,
-            justify="left",
-        ).pack(anchor="w")
-        ttk.Button(agent_frame, text="安装 Skill 到 ~/.claude/skills", command=self.handle_install_skill).pack(anchor="w", pady=(8, 0))
-
         log_frame = ttk.LabelFrame(main, text="运行日志", padding=12)
         log_frame.pack(fill="both", expand=True, pady=(16, 0))
 
-        self.log_text = tk.Text(log_frame, height=18, wrap="word")
+        self.log_text = tk.Text(log_frame, height=12, wrap="word")
         self.log_text.pack(fill="both", expand=True)
         self.log_text.configure(state="disabled")
 
@@ -441,13 +452,14 @@ class App:
         self.output_dir_var.set(default_dir)
         self.append_log(f"已恢复默认输出目录：{default_dir}")
 
-    def handle_install_skill(self):
+    def handle_install_skill(self, agent="claude"):
+        agent_name = "Claude Code" if agent == "claude" else "Codex"
         try:
-            target = skill_installer.install_skill()
-            self.append_log(f"✅ Skill 已安装：{target}")
+            target = skill_installer.install_skill(agent=agent)
+            self.append_log(f"✅ {agent_name} Skill 已安装：{target}")
             messagebox.showinfo(
                 "安装成功",
-                f"Skill 已安装到：\n{target}\n\n之后在 Claude Code 里直接说「导出 biji 博主笔记」即可。",
+                f"Skill 已安装到：\n{target}\n\n之后可直接对 {agent_name} 说「导出 biji 博主笔记」。",
             )
         except Exception as exc:
             self.append_log(f"❌ {exc}")

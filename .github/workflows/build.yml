@@ -1,0 +1,40 @@
+name: Build packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: GetbijiEx-macOS
+            output: dist/GetbijiEx.app
+          - os: windows-latest
+            artifact: GetbijiEx-Windows
+            output: dist/GetbijiEx
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build GetbijiEx
+        run: |
+          uv sync --dev
+          uv run pyinstaller --noconfirm GetbijiEx.spec
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.output }}
+          if-no-files-found: error

@@ -1,15 +1,16 @@
 """
-Biji 导出工具的 Agent 友好 CLI。
+GetbijiEx 的 Agent 友好 CLI。
 
 所有子命令把结构化结果以 JSON 打印到 stdout，过程日志走 stderr，
 方便 Agent 解析。打包后的 app 带参数调用时走的就是这个入口。
 
 用法:
-  biji_cli.py topics                        # 知识库列表
-  biji_cli.py follows <topic_id_alias>      # 知识库内博主列表
-  biji_cli.py export --follow-id N --name X --alias Y [--topic-id N] [--output-dir D]
-  biji_cli.py export-url <URL> [--topic-id N] [--output-dir D]
-  biji_cli.py token                         # 刷新 Token（弹浏览器）
+  GetbijiEx topics                        # 知识库列表
+  GetbijiEx follows <topic_id_alias>      # 知识库内博主列表
+  GetbijiEx export --follow-id N --name X --alias Y [--topic-id N] [--output-dir D]
+  GetbijiEx export-url <URL> [--topic-id N] [--output-dir D]
+  GetbijiEx token                         # 刷新 Token（弹浏览器）
+  GetbijiEx install-skill [--agent claude|codex] [--dir D]
 """
 import argparse
 import contextlib
@@ -34,7 +35,7 @@ def _fail(message: str, code: int = 1) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Biji 笔记导出 CLI（输出 JSON）")
+    parser = argparse.ArgumentParser(description="GetbijiEx CLI（输出 JSON）")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("topics", help="列出知识库")
@@ -56,7 +57,18 @@ def main():
 
     sub.add_parser("token", help="刷新 Token（会弹出浏览器）")
 
-    sub.add_parser("install-skill", help="把 Agent Skill 安装到 ~/.claude/skills")
+    p_install = sub.add_parser("install-skill", help="把 Agent Skill 安装到本机")
+    p_install.add_argument(
+        "--agent",
+        default="claude",
+        choices=["claude", "codex"],
+        help="目标 Agent（默认 claude）",
+    )
+    p_install.add_argument(
+        "--dir",
+        default=None,
+        help="自定义 Skill 安装目录（其他 Agent 用这个，直接指定目录）",
+    )
 
     args = parser.parse_args()
 
@@ -94,7 +106,7 @@ def main():
 
         elif args.command == "install-skill":
             from scripts import skill_installer
-            target = skill_installer.install_skill()
+            target = skill_installer.install_skill(agent=args.agent, target_dir=args.dir)
             _out({"ok": True, "skill_path": str(target)})
 
     except biji_export.AuthError:

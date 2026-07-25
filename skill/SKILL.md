@@ -1,11 +1,11 @@
 ---
-name: biji-export
-description: 导出 biji.com（Get笔记/得到大脑）知识库中订阅博主（多为抖音）的笔记为 Markdown。当用户想导出 biji 笔记、知识库内容、订阅博主笔记，或提到"biji""得到大脑""Get笔记"导出时使用。依赖本机已安装 Biji 导出小工具或其源码。
+name: getbijiex
+description: 导出 biji.com（Get笔记/得到大脑）知识库中订阅博主（多为抖音）的笔记为 Markdown。当用户想导出 biji 笔记、知识库内容、订阅博主笔记，或提到"biji""得到大脑""Get笔记"导出时使用。依赖本机已安装 GetbijiEx 或其源码。
 ---
 
-# Biji 笔记导出
+# GetbijiEx
 
-本机装有「Biji 导出小工具」，以下 CLI 就是它的命令行模式，所有命令**输出 JSON 到 stdout**，过程日志在 stderr。
+本机装有「GetbijiEx」，以下 CLI 就是它的命令行模式，所有命令**输出 JSON 到 stdout**，过程日志在 stderr。
 
 CLI 命令前缀（后文统称 `CLI`）：
 

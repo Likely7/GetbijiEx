@@ -39,7 +39,7 @@ scripts/refresh_token_browser.py   # 修改：改为薄壳，内部调用 auto_t
 ## 核心流程（auto_token.py）
 
 1. 用 DrissionPage 启动系统 Chrome，用户数据目录为
-   `~/Library/Application Support/BijiExportApp/chrome_profile/`（即 `user_data_root() / "chrome_profile"`），登录态由此持久化。
+   `~/Library/Application Support/GetbijiEx/chrome_profile/`（即 `user_data_root() / "chrome_profile"`），登录态由此持久化。
 2. 开始监听网络请求，打开 `https://www.biji.com`。
 3. 监听发往 `knowledge-api.trytalks.com` 的请求，从请求头中提取
    `authorization`、`xi-csrf-token`、`x-appid`。
@@ -75,7 +75,7 @@ scripts/refresh_token_browser.py   # 修改：改为薄壳，内部调用 auto_t
 
 ## 打包注意事项
 
-- 确认 `Biji导出小工具.spec` 不打包 `config/biji_auth.json` 和用户数据（开发时检查）。
+- 确认 `GetbijiEx.spec` 不打包 `config/biji_auth.json` 和用户数据（开发时检查）。
 - DrissionPage 为纯 Python，预期 PyInstaller 直接可打包；若缺隐式依赖，在 spec 的 `hiddenimports` 补充。
 
 ## 验证方式（手动）

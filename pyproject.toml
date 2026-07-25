@@ -1,7 +1,7 @@
 [project]
-name = "get-biji-export"
+name = "getbijiex"
 version = "0.1.0"
-description = "Add your description here"
+description = "Export Get笔记 (biji.com) knowledge-base subscriptions to Markdown and JSON"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
