@@ -300,7 +300,37 @@ export async function configureRuntime(args, options = {}) {
   return { ...config, config_path: configPath };
 }
 
-export function runRuntime(descriptor, args) {
+function dependencyErrorMessage(result) {
+  const detail = String(result.stderr || result.error?.message || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  const suffix = detail ? `：${detail}` : "。";
+  return `源码模式需要 uv、Python 3.11+ 和可用的项目依赖${suffix}`;
+}
+
+function validateSourceRuntime(descriptor) {
+  const result = spawnSync(
+    descriptor.command,
+    ["--directory", descriptor.path, "run", "python", "--version"],
+    {
+      cwd: descriptor.cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
+    },
+  );
+  if (result.error || result.signal || result.status !== 0) {
+    throw new LauncherError(
+      "GetbijiExDependencyMissing",
+      dependencyErrorMessage(result),
+    );
+  }
+}
+
+export function runRuntime(descriptor, args, options = {}) {
+  if (descriptor.type === "source" && !options.skipSourceValidation) {
+    validateSourceRuntime(descriptor);
+  }
   const result = spawnSync(
     descriptor.command,
     [...descriptor.argsPrefix, ...args],
@@ -311,12 +341,6 @@ export function runRuntime(descriptor, args) {
     },
   );
   if (result.error) {
-    if (descriptor.type === "source" && result.error.code === "ENOENT") {
-      throw new LauncherError(
-        "GetbijiExDependencyMissing",
-        "源码模式需要 uv。请先安装 uv，并确认 uv 已加入 PATH。",
-      );
-    }
     throw new LauncherError(
       "GetbijiExLaunchError",
       `无法启动 GetbijiEx：${result.error.message}`,

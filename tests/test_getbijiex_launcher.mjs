@@ -192,6 +192,22 @@ test("source runtime reports a clear error when uv is unavailable", async () => 
   );
 });
 
+test("source runtime turns a failed dependency preflight into a structured error", async () => {
+  const root = await temporaryDirectory("getbijiex-bad-python-");
+  const source = path.join(root, "source");
+  await createSource(source);
+  const descriptor = {
+    ...sourceDescriptor(source),
+    command: path.join(root, "missing-runtime"),
+  };
+
+  assert.throws(
+    () => runRuntime(descriptor, ["topics"]),
+    (error) => error.name === "GetbijiExDependencyMissing"
+      && error.message.includes("Python 3.11+"),
+  );
+});
+
 test("launcher forwards arguments, output, and exit status", async () => {
   const root = await temporaryDirectory("getbijiex-forward-");
   const executable = process.execPath;
