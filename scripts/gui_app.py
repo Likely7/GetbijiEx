@@ -1,4 +1,5 @@
 from pathlib import Path
+import queue
 import subprocess
 import sys
 import threading
@@ -29,9 +30,27 @@ class App:
         self.appid_var = tk.StringVar(value="3")
         self.topics = []
         self.follows = []
+        self._ui_queue = queue.Queue()
+        self._retry_after_token = None  # Token 刷新后要重试的动作
+        self._token_auto_retried = False  # 防止过期→刷新→重试死循环
 
         self.build_ui()
         self.refresh_auth_status()
+        self.root.after(100, self._poll_ui_queue)
+
+    def _poll_ui_queue(self):
+        """主线程轮询工作线程发来的回调（macOS 上从子线程直接调 root.after 不会唤醒 mainloop）"""
+        while True:
+            try:
+                callback, args = self._ui_queue.get_nowait()
+            except queue.Empty:
+                break
+            callback(*args)
+        self.root.after(100, self._poll_ui_queue)
+
+    def _call_ui(self, callback, *args):
+        """工作线程安全地调度 UI 操作"""
+        self._ui_queue.put((callback, args))
 
     def build_ui(self):
         main = ttk.Frame(self.root, padding=16)
@@ -162,6 +181,7 @@ class App:
         self.auth_label.configure(text="未检测到有效 Token，请先保存。")
 
     def handle_load_topics(self):
+        self._token_auto_retried = False
         self.set_busy(True, "正在加载知识库...")
         self.append_log("正在加载知识库列表…")
         threading.Thread(target=self._load_topics_worker, daemon=True).start()
@@ -170,14 +190,14 @@ class App:
         try:
             topics = biji_export.list_topics()
         except Exception as exc:
-            self.root.after(0, self._load_topics_done, None, exc)
+            self._call_ui(self._load_topics_done, None, exc)
         else:
-            self.root.after(0, self._load_topics_done, topics, None)
+            self._call_ui(self._load_topics_done, topics, None)
 
     def _load_topics_done(self, topics, error):
         self.set_busy(False, "准备就绪")
         if error is not None:
-            self._show_load_error("加载知识库失败", error)
+            self._show_load_error("加载知识库失败", error, retry=self.handle_load_topics)
             return
         self.topics = topics
         self.follows = []
@@ -204,14 +224,14 @@ class App:
         try:
             follows = biji_export.list_follows(topic["id_alias"])
         except Exception as exc:
-            self.root.after(0, self._load_follows_done, None, exc)
+            self._call_ui(self._load_follows_done, None, exc)
         else:
-            self.root.after(0, self._load_follows_done, follows, None)
+            self._call_ui(self._load_follows_done, follows, None)
 
     def _load_follows_done(self, follows, error):
         self.set_busy(False, "准备就绪")
         if error is not None:
-            self._show_load_error("加载博主列表失败", error)
+            self._show_load_error("加载博主列表失败", error, retry=self.handle_topic_selected)
             return
         self.follows = follows
         self.follow_combo.configure(
@@ -221,7 +241,14 @@ class App:
         if follows:
             self.follow_combo.current(0)
 
-    def _show_load_error(self, title, error):
+    def _show_load_error(self, title, error, retry=None):
+        if isinstance(error, biji_export.AuthError) and retry is not None and not self._token_auto_retried:
+            # JWT 只有约 30 分钟有效期，过期是常态：自动重抓 Token 并重试一次
+            self._token_auto_retried = True
+            self._retry_after_token = retry
+            self.append_log("Token 已过期，正在自动重新获取…")
+            self.handle_auto_token()
+            return
         if isinstance(error, biji_export.AuthError):
             self.append_log("❌ Token 已过期，请重新点「自动获取 Token」")
             messagebox.showerror(title, "Token 已过期，请重新点「自动获取 Token」")
@@ -236,23 +263,28 @@ class App:
 
     def _auto_token_worker(self):
         def log(msg):
-            self.root.after(0, self.append_log, msg)
+            self._call_ui(self.append_log, msg)
 
         try:
             auto_token.capture_token(log=log)
         except auto_token.CaptureCancelled:
-            self.root.after(0, self._auto_token_done, None)
+            self._call_ui(self._auto_token_done, None)
         except Exception as exc:
-            self.root.after(0, self._auto_token_done, str(exc))
+            self._call_ui(self._auto_token_done, str(exc))
         else:
-            self.root.after(0, self._auto_token_done, "success")
+            self._call_ui(self._auto_token_done, "success")
 
     def _auto_token_done(self, result):
         self.set_busy(False, "准备就绪")
         self.refresh_auth_status()
         if result == "success":
             self.append_log("✅ Token 已自动获取并保存")
-            self.handle_load_topics()
+            retry = self._retry_after_token
+            self._retry_after_token = None
+            if retry is not None:
+                retry()
+            else:
+                self.handle_load_topics()
         elif result is None:
             self.append_log("已取消获取 Token（浏览器窗口被关闭）")
         else:
@@ -347,9 +379,9 @@ class App:
                     url, topic_id_override=topic_id, output_dir=output
                 )
         except Exception as exc:
-            self.root.after(0, self._export_done, None, str(exc))
+            self._call_ui(self._export_done, None, str(exc))
         else:
-            self.root.after(0, self._export_done, result, None)
+            self._call_ui(self._export_done, result, None)
 
     def _export_done(self, result, error):
         self.set_busy(False, "准备就绪")
