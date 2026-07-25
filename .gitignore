@@ -13,6 +13,7 @@ wheels/
 # Local env/secrets
 .env
 .env.*
+config/
 
 # Exports
 data/

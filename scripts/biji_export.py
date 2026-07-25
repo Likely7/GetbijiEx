@@ -1,27 +1,29 @@
 """
 Biji.com 通用笔记导出脚本
-用法: 
+用法:
   python scripts/biji_export.py <URL>                    # 导出笔记
   python scripts/biji_export.py --update-token           # 更新认证 token
 
-示例: 
+示例:
   python scripts/biji_export.py "https://www.biji.com/subject/20jqglxY/DEFAULT?followId=1109488&followName=水球泡泡"
 """
 import requests
 import json
 import time
-import os
 import re
 import sys
 from datetime import datetime
-from urllib.parse import urlparse, parse_qs, unquote
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs, unquote
 
-# 项目根目录
-PROJECT_ROOT = Path(__file__).parent.parent
-CONFIG_PATH = PROJECT_ROOT / "config" / "biji_auth.json"
-OUTPUT_DIR = PROJECT_ROOT / "data" / "biji_export"
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+from scripts.app_paths import config_dir, output_dir
+
+CONFIG_PATH = config_dir() / "biji_auth.json"
+OUTPUT_DIR = output_dir()
+
+
+class ExportError(Exception):
+    pass
 
 
 def load_headers() -> dict:
@@ -59,6 +61,13 @@ def load_headers() -> dict:
         return base_headers
 
 
+def save_auth_config(config: dict):
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+    get_headers(force_reload=True)
+
+
 def update_token():
     """交互式更新 token"""
     print("\n=== 更新 Biji.com 认证 Token ===\n")
@@ -68,37 +77,32 @@ def update_token():
     print("3. F12 打开 DevTools -> Network")
     print("4. 点击任意笔记，找到 knowledge-api.trytalks.com 请求")
     print("5. 复制以下 Request Headers:\n")
-    
+
     auth = input("authorization (Bearer xxx...): ").strip()
     if not auth.startswith("Bearer "):
         auth = "Bearer " + auth
-        
+
     csrf = input("xi-csrf-token: ").strip()
     appid = input("x-appid (默认 3): ").strip() or "3"
-    
+
     config = {
         "authorization": auth,
         "xi-csrf-token": csrf,
-        "x-appid": appid
+        "x-appid": appid,
     }
-    
-    # 确保 config 目录存在
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
-    
+
+    save_auth_config(config)
+
     print(f"\n✅ Token 已保存到: {CONFIG_PATH}")
-    
-    # 测试连接
+
     print("\n测试连接...")
-    headers = load_headers()
+    headers = get_headers(force_reload=True)
     try:
         response = requests.post(
             "https://knowledge-api.trytalks.com/v1/web/follow/account/posts",
             headers=headers,
             json={"topic_id": -1, "follow_id": 1, "page": 1, "page_size": 1},
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 200:
             print("✅ 认证有效!")
@@ -111,9 +115,9 @@ def update_token():
 # 全局 HEADERS，延迟加载
 HEADERS = None
 
-def get_headers():
+def get_headers(force_reload: bool = False):
     global HEADERS
-    if HEADERS is None:
+    if HEADERS is None or force_reload:
         HEADERS = load_headers()
     return HEADERS
 
@@ -238,9 +242,10 @@ def fetch_post_detail(post_id, topic_id_alias: str):
         return None
 
 
-def export_to_markdown(full_data: list, author_name: str) -> str:
+def export_to_markdown(full_data: list, author_name: str, output_dir: Path) -> str:
     """导出为 Markdown 文件"""
-    md_path = OUTPUT_DIR / f"{author_name}_完整导出_{datetime.now().strftime('%Y%m%d')}.md"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    md_path = output_dir / f"{author_name}_完整导出_{datetime.now().strftime('%Y%m%d')}.md"
     timestamp_str = datetime.now().strftime("%Y-%m-%d")
     
     with open(md_path, "w", encoding="utf-8") as f:
@@ -271,24 +276,25 @@ def export_to_markdown(full_data: list, author_name: str) -> str:
     return str(md_path)
 
 
-def export_notes(url: str, topic_id_override: int = None):
+def export_notes(url: str, topic_id_override: int = None, output_dir: str | Path | None = None):
     """导出笔记主流程"""
     print(f"解析 URL: {url}")
-    
+
+    target_output_dir = Path(output_dir).expanduser() if output_dir else OUTPUT_DIR
+    target_output_dir.mkdir(parents=True, exist_ok=True)
+
     params = parse_biji_url(url)
     follow_id = params["follow_id"]
     author_name = params["follow_name"]
     topic_id_alias = params["topic_id_alias"]
-    
+
     if not follow_id or not author_name:
-        print("错误: URL 缺少 followId 或 followName 参数")
-        sys.exit(1)
-    
+        raise ExportError("URL 缺少 followId 或 followName 参数")
+
     print(f"博主: {author_name}")
     print(f"Follow ID: {follow_id}")
     print(f"Topic Alias: {topic_id_alias}")
-    
-    # 获取 topic_id
+
     if topic_id_override:
         topic_id = topic_id_override
         print(f"使用手动指定 Topic ID: {topic_id}")
@@ -296,75 +302,74 @@ def export_notes(url: str, topic_id_override: int = None):
         topic_id = get_topic_id(topic_id_alias, follow_id)
 
     if topic_id == -1:
-        print("无法获取 topic_id，请尝试手动指定: --topic-id <ID>")
-        print("如何获取 Topic ID:")
-        print("  1. F12 打开网络面板")
-        print("  2. 刷新博主主页")
-        print("  3. 找到 'posts' 请求")
-        print("  4. 查看 Payload 中的 topic_id")
-        return
+        raise ExportError(
+            "无法获取 topic_id，请尝试手动指定 --topic-id。\n"
+            "获取方式：F12 打开网络面板 → 刷新博主主页 → 找到 posts 请求 → 查看 Payload 中的 topic_id"
+        )
     print(f"Topic ID: {topic_id}")
-    
-    # 获取笔记列表
+
     posts = fetch_post_list(topic_id, follow_id)
-    
+
     if not posts:
-        print("未找到笔记，退出")
-        return
-    
-    # 获取详情
+        raise ExportError("未找到笔记")
+
     full_data = []
     print("获取笔记详情...")
     for i, post in enumerate(posts):
         post_id = post.get("post_id")
         title = post.get("post_title", "Untitled") or post.get("post_name", "Untitled")
         print(f"[{i+1}/{len(posts)}] 获取: {title[:50]}...")
-        
+
         detail = fetch_post_detail(post_id, topic_id_alias)
         if detail:
             full_data.append(detail)
         else:
             full_data.append(post)
-            
+
         time.sleep(0.5)
-    
-    # 保存 JSON
-    json_path = OUTPUT_DIR / f"{author_name}_full_data.json"
+
+    json_path = target_output_dir / f"{author_name}_full_data.json"
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(full_data, f, ensure_ascii=False, indent=2)
     print(f"JSON 已保存: {json_path}")
-    
-    # 生成 Markdown
-    md_path = export_to_markdown(full_data, author_name)
+
+    md_path = export_to_markdown(full_data, author_name, target_output_dir)
     print(f"Markdown 已保存: {md_path}")
-    
+
     print(f"\n✅ 导出完成! 共 {len(full_data)} 条笔记")
+    return {
+        "author_name": author_name,
+        "count": len(full_data),
+        "json_path": str(json_path),
+        "markdown_path": str(md_path),
+        "topic_id": topic_id,
+        "output_dir": str(target_output_dir),
+    }
 
 
 def main():
     import argparse
-    import sys
-    
+
     parser = argparse.ArgumentParser(description="Biji.com 笔记导出")
     parser.add_argument("url", nargs="?", help="博主主页 URL")
-    parser.add_argument("--update-token", "-u", action="store_true", help="引导刷新 Token")
+    parser.add_argument("--update-token", "-u", action="store_true", help="交互式更新 Token")
     parser.add_argument("--topic-id", type=int, help="手动指定 Topic ID (如果自动获取失败)")
-    
+
     args = parser.parse_args()
-    
+
     if args.update_token:
-        print("请按以下步骤刷新 Token:")
-        print("1. 在浏览器打开 biji.com 并登录")
-        print("2. F12 打开网络面板 -> 刷新页面")
-        print("3. 复制任意请求的 cookie, authorization, xi-csrf-token, x-appid")
-        print("4. 更新 config/biji_auth.json")
+        update_token()
         return
 
     if not args.url:
         parser.print_help()
         sys.exit(1)
 
-    export_notes(args.url, topic_id_override=args.topic_id)
+    try:
+        export_notes(args.url, topic_id_override=args.topic_id)
+    except ExportError as exc:
+        print(f"❌ {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

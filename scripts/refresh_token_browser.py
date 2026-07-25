@@ -5,12 +5,23 @@ Biji.com Token 自动刷新脚本 (浏览器版)
 """
 import json
 import os
-from pathlib import Path
+import sys
 from playwright.sync_api import sync_playwright
 
-# 项目根目录
-PROJECT_ROOT = Path(__file__).parent.parent
-CONFIG_PATH = PROJECT_ROOT / "config" / "biji_auth.json"
+from scripts.app_paths import config_dir
+
+CONFIG_PATH = config_dir() / "biji_auth.json"
+
+
+def browser_launch_args() -> dict:
+    if getattr(sys, "frozen", False):
+        executable_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+        if not executable_path:
+            raise RuntimeError(
+                "未找到 Chromium 可执行文件。请先运行 Playwright 安装，或在环境变量 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH 中指定浏览器路径。"
+            )
+        return {"headless": False, "executable_path": executable_path}
+    return {"headless": False}
 
 def main():
     print("\n=== Biji.com Token 自动刷新程序 ===")
@@ -18,8 +29,7 @@ def main():
     print("登录成功后并点击任意笔记，程序将自动捕获并保存 Token。\n")
 
     with sync_playwright() as p:
-        # 启动有界面的浏览器
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(**browser_launch_args())
         context = browser.new_context()
         page = context.new_page()
 
