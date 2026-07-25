@@ -14,7 +14,7 @@ a = Analysis(
     binaries=[],
     datas=[
         (str(ROOT / 'scripts'), './scripts'),
-        (str(ROOT / 'skill'), './skill'),
+        (str(ROOT / 'skills'), './skills'),
     ],
     hiddenimports=[
         'scripts.app_paths',

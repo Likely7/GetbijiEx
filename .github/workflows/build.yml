@@ -7,7 +7,41 @@ on:
       - "v*"
 
 jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify Python
+        run: |
+          uv sync --dev
+          uv run pytest -q
+          uv run python -m compileall -q scripts
+
+      - name: Verify Node launcher
+        run: node --test tests/test_getbijiex_launcher.mjs
+
+      - name: Verify npx Skill installation
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          npx -y skills@1.5.20 add . --list | tee /tmp/getbijiex-skills.txt
+          grep -q "getbijiex" /tmp/getbijiex-skills.txt
+
   build:
+    needs: verify
     strategy:
       fail-fast: false
       matrix:

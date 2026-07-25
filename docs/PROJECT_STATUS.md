@@ -23,25 +23,26 @@ GetbijiEx 用于把 biji.com（Get笔记/得到大脑）知识库中订阅博主
 | 导出进度 | 已完成 | GUI 显示当前条目和总体进度，完成后打开输出目录 |
 | 跨平台数据目录 | 已完成 | macOS、Windows、Linux 分别使用各自标准应用数据目录 |
 | 双模式应用 | 已完成 | 无参数启动 GUI，带参数进入 JSON CLI |
-| Agent Skill | 已完成 | 支持 Claude Code、Codex 和自定义 Skill 根目录 |
-| 小白安装说明 | 已完成 | README 提供可直接复制给 Agent 的完整安装提示词、单独安装 Skill 提示词和各平台命令 |
+| Agent Skill | 已完成 | 支持标准 `npx skills add`、Claude Code、Codex 和自定义 Skill 根目录 |
+| 小白安装说明 | 已完成 | README 提供 npx 单行命令、可直接复制给 Agent 的完整安装提示词和各平台命令 |
 | macOS 打包 | 已完成 | 本机与 GitHub Actions 均已验证 |
 | Windows 打包 | 已完成 | GitHub Actions 已验证可生成 Windows 产物 |
-| 自动化测试 | 已完成 | 覆盖 Token 提取、列表分页、CLI、Skill 安装和数据迁移 |
+| 自动化测试 | 已完成 | 覆盖 Token 提取、列表分页、CLI、Skill 安装、npx 启动器和数据迁移 |
 | 正式 Release | 待完成 | 需要确定版本号、生成发布说明并上传版本产物 |
 
 ## 最近验证基线
 
-最近一次完整发布基线为提交 `9d466ca`：
+2026-07-26 对 npx Skill 安装改造完成了本地发布前验证：
 
-- `pytest`：20 个测试通过。
-- macOS PyInstaller 构建成功。
-- Windows GitHub Actions 构建成功。
-- macOS GUI 已实际启动并检查关键控件。
-- Claude Code、Codex、自定义目录三种 Skill 安装方式均验证通过。
-- Git 历史和打包产物中不包含 `config/biji_auth.json`。
+- `pytest`：28 个测试通过。
+- Node 启动器：13 个测试通过，其中包含不信任工作目录源码、缺失 `uv` 提示和参数/退出码转发测试。
+- 标准 `skills` CLI 可以发现并在隔离 HOME 中安装 `getbijiex`。
+- 源码版和打包版 `install-skill` 均能复制完整 Skill 资源并生成直连命令。
+- macOS Apple Silicon PyInstaller 构建成功，打包版 CLI 和 Skill 安装命令通过烟雾测试。
+- Git diff 格式检查和敏感信息扫描通过。
+- Linux 与 Windows 的 Node 启动器测试已纳入 GitHub Actions；推送后仍需确认远端工作流结果。
 
-本文件之后的改动必须按 [发布检查清单](RELEASE_CHECKLIST.md) 重新验证，不能沿用旧结果代替新验证。
+历史完整发布基线为提交 `9d466ca`；本文件之后的改动仍须按 [发布检查清单](RELEASE_CHECKLIST.md) 重新验证，不能沿用旧结果代替新验证。
 
 ## 当前工作重点
 
@@ -57,6 +58,7 @@ GetbijiEx 用于把 biji.com（Get笔记/得到大脑）知识库中订阅博主
 - macOS 应用未做 Apple Developer ID 签名和公证，首次打开可能需要用户在系统安全设置中确认。
 - macOS 构建产物与构建机器架构一致；当前本地验证产物为 Apple Silicon。
 - GitHub Actions 可以构建 Windows 产物，但真实 Windows GUI 与 Chrome 联动仍需要人工验收。
+- npx 命令只安装 Skill，不包含 GetbijiEx 软件本身；使用 npx 安装的 Skill 需要 Node.js 22.20+，本机必须已有 App、Windows 程序或源码；源码模式还需要 Python 3.11+ 和 `uv`。
 - Biji 是外部服务，其接口结构和鉴权规则变化可能导致功能失效。
 
 ## 项目文档

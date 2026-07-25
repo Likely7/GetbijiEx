@@ -1,6 +1,6 @@
 # 技术决策记录
 
-> 最后更新：2026-07-25
+> 最后更新：2026-07-26
 
 本文记录已经确定并影响后续维护的关键决策。若要改变某项决策，应新增一条替代记录，不直接删除历史原因。
 
@@ -41,10 +41,10 @@
 
 ## ADR-006：Skill 随应用打包并支持多 Agent 安装
 
-**状态：** 已采用  
-**背景：** 单独维护 Skill 仓库会增加版本漂移，小白用户也难以手动配置调用路径。  
-**决策：** `skill/SKILL.md` 作为模板随应用打包，安装时把占位符替换为真实 CLI 路径；预设 Claude Code、Codex，并允许 `--dir` 指定其他 Agent 目录。  
-**结果：** Skill 与应用版本同步，GUI 和 CLI 都能完成安装。
+**状态：** 已采用
+**背景：** 单独维护 Skill 仓库会增加版本漂移，小白用户也难以手动配置调用路径。
+**决策：** `skills/getbijiex/` 作为唯一 Skill 来源并随应用打包；GetbijiEx 自带安装器会复制完整目录，并把默认 npx 启动区块替换为真实 CLI 路径；预设 Claude Code、Codex，并允许 `--dir` 指定其他 Agent 目录。
+**结果：** Skill 与应用版本同步，GUI、GetbijiEx CLI 和标准 Agent Skills 安装工具都能完成安装。
 
 ## ADR-007：应用数据使用操作系统标准目录
 
@@ -66,3 +66,10 @@
 **背景：** `config/biji_auth.json` 曾进入本地 Git 历史，公开推送会泄露认证信息。  
 **决策：** 文件加入 `.gitignore`，并在首次公开推送前清理全部待推送历史。  
 **结果：** 当前公开仓库与构建产物不包含认证文件；后续发布检查必须继续验证。
+
+## ADR-010：使用标准 Agent Skills CLI 分发独立 Skill
+
+**状态：** 已采用
+**背景：** 用户需要一条可以直接复制的 npx 命令，但项目尚无正式 GitHub Release；此时发布自有 npm 软件安装器会引入二进制下载、校验、平台版本和 npm 发布权限等额外依赖。
+**决策：** 仓库使用标准 `skills/getbijiex/` 结构，通过 `npx skills add Likely7/GetbijiEx --skill getbijiex` 从 GitHub 分发 Skill。原样安装的 Skill 携带 Node 启动器，用于定位标准安装位置、PATH、环境变量或用户明确配置的 GetbijiEx；为避免执行当前项目中的不可信脚本，不自动信任工作目录里的同名源码。本阶段不发布 `npx getbijiex` 软件安装器。
+**结果：** Skill 可以在没有自有 npm 包和正式 Release 的情况下单独安装，同时保留“Skill 不等于软件本体”的边界。正式 Release 完成后，再独立评估通过 npm 下载和校验应用程序。

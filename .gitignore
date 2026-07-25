@@ -25,5 +25,15 @@ tmp/
 # Local scripts artifacts
 .DrissionPage/
 
+# Node/npm artifacts
+node_modules/
+.npm/
+npm-debug.log*
+*.tgz
+coverage/
+
+# Claude Code local worktrees
+.claude/
+
 # macOS
 .DS_Store

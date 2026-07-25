@@ -16,11 +16,15 @@
 uv sync --dev
 uv run pytest -q
 uv run python -m compileall -q scripts
+node --test tests/test_getbijiex_launcher.mjs
+npx -y skills@1.5.20 add . --list
 git diff --check
 ```
 
 - [ ] 全部测试通过，失败数为 0。
 - [ ] Python 模块编译检查通过。
+- [ ] Node 跨平台启动器测试在 Linux 和 Windows CI 上通过。
+- [ ] 标准 `skills` CLI 能发现 `getbijiex`。
 - [ ] Git diff 格式检查通过。
 
 ## 3. 敏感信息检查
@@ -49,7 +53,11 @@ git diff --check
 - [ ] Claude Code 安装路径正确。
 - [ ] Codex 安装路径正确。
 - [ ] `--dir` 自定义目录安装正确。
-- [ ] 安装后的 `SKILL.md` 不再包含 `{{CLI_COMMAND}}` 占位符。
+- [ ] GetbijiEx 自带安装器会复制完整 Skill 资源，并把默认启动区块替换为本机直连命令。
+- [ ] `npx skills add Likely7/GetbijiEx --skill getbijiex` 能安装 `SKILL.md` 和跨平台启动器。
+- [ ] npx 安装后的启动器能自动定位、显式配置并调用现有 GetbijiEx，参数和退出码不会丢失。
+- [ ] 启动器不会自动执行当前工作目录或父目录中的同名 `scripts/biji_cli.py`。
+- [ ] Skill 中不存在未处理的 `{{CLI_COMMAND}}` 占位符。
 
 ## 6. 平台构建
 
