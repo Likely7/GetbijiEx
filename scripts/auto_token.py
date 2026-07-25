@@ -19,6 +19,9 @@ API_DOMAIN = "knowledge-api.trytalks.com"
 FIRST_LOGIN_HINT_SECONDS = 120
 # 空闲监听超过这个秒数就自动把页面导航回知识库页面，重新触发请求
 RENAVIGATE_SECONDS = 30
+# 调试端口：避开 9222（用户日常 Chrome 的远程调试端口）。
+# 注意：不能用 auto_port()——它会为每次启动创建临时用户目录，登录态无法持久化。
+DEBUG_PORT = 9333
 # 总时长上限，避免界面永远卡在等待状态
 MAX_TOTAL_SECONDS = 900
 
@@ -95,9 +98,9 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
 
     options = ChromiumOptions().set_browser_path(executable)
     options.set_user_data_path(str(chrome_profile_dir()))
-    # 自动选空闲端口：默认 9222 可能被用户日常 Chrome（开远程调试）占用，
-    # 否则会错误地接管用户的浏览器
-    options.auto_port()
+    # 固定调试端口（避开日常 Chrome 占用的 9222）。
+    # 上次异常退出留下僵尸浏览器时会自动接管，行为也正确。
+    options.set_local_port(DEBUG_PORT)
 
     try:
         page = ChromiumPage(options)
