@@ -9,6 +9,23 @@
 - 支持从 URL 自动解析参数
 - **自动获取 Token**：一键弹出 Chrome 自动捕获认证信息，首次登录一次即可（驱动系统 Chrome，登录态持久化）
 - **本地 GUI 小工具**：支持自动/手动保存 Token、自定义输出目录、导出 Markdown / JSON
+- **Agent 集成**：app 是双模式的——双击是 GUI，终端里带参数调用就是 CLI（输出 JSON），配合一键安装的 Claude Code Skill，Agent 可以直接帮你导出笔记
+
+## Agent / CLI 用法
+
+打包后的 app 自带命令行模式（无需 Python 环境）：
+
+```bash
+# macOS 打包版（路径按实际安装位置调整）
+"/Applications/Biji导出小工具.app/Contents/MacOS/Biji导出小工具" topics
+
+# 源码版
+uv run python scripts/biji_cli.py topics
+```
+
+子命令（全部输出 JSON）：`topics`（知识库列表）、`follows <id_alias>`（博主列表）、`export --follow-id N --name X --alias Y`、`export-url <URL>`、`token`（刷新 Token）、`install-skill`。
+
+使用 Claude Code 的话，点 GUI 里的「安装 Skill」按钮（或运行 `install-skill` 子命令），会把 Skill 安装到 `~/.claude/skills/biji-export/`，之后直接对 Agent 说"导出某某博主的笔记"即可。
 
 ## 环境要求
 

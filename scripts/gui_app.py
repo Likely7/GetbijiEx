@@ -13,6 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from scripts import auto_token
 from scripts import biji_export
+from scripts import skill_installer
 from scripts.app_paths import output_dir, user_data_root
 
 
@@ -20,7 +21,7 @@ class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Biji 导出小工具")
-        self.root.geometry("760x860")
+        self.root.geometry("760x960")
 
         self.url_var = tk.StringVar()
         self.topic_id_var = tk.StringVar()
@@ -138,6 +139,17 @@ class App:
         ttk.Button(output_frame, text="选择输出目录", command=self.choose_output_dir).pack(anchor="w", pady=(10, 0))
         ttk.Button(output_frame, text="恢复默认目录", command=self.reset_output_dir).pack(anchor="w", pady=(8, 0))
         ttk.Button(output_frame, text="打开输出目录", command=self.open_output_dir).pack(anchor="w", pady=(8, 0))
+
+        agent_frame = ttk.LabelFrame(main, text="4. Agent 集成（可选）", padding=12)
+        agent_frame.pack(fill="x", pady=(16, 0))
+
+        ttk.Label(
+            agent_frame,
+            text="安装后，Claude Code 等 Agent 可以直接调用本工具导出笔记，不用打开本软件。",
+            wraplength=680,
+            justify="left",
+        ).pack(anchor="w")
+        ttk.Button(agent_frame, text="安装 Skill 到 ~/.claude/skills", command=self.handle_install_skill).pack(anchor="w", pady=(8, 0))
 
         log_frame = ttk.LabelFrame(main, text="运行日志", padding=12)
         log_frame.pack(fill="both", expand=True, pady=(16, 0))
@@ -428,6 +440,18 @@ class App:
         default_dir = str(output_dir())
         self.output_dir_var.set(default_dir)
         self.append_log(f"已恢复默认输出目录：{default_dir}")
+
+    def handle_install_skill(self):
+        try:
+            target = skill_installer.install_skill()
+            self.append_log(f"✅ Skill 已安装：{target}")
+            messagebox.showinfo(
+                "安装成功",
+                f"Skill 已安装到：\n{target}\n\n之后在 Claude Code 里直接说「导出 biji 博主笔记」即可。",
+            )
+        except Exception as exc:
+            self.append_log(f"❌ {exc}")
+            messagebox.showerror("安装失败", str(exc))
 
     def open_output_dir(self):
         self.open_path(self.output_dir_var.get())

@@ -2,11 +2,21 @@
 
 
 a = Analysis(
-    ['scripts/gui_app.py'],
+    ['scripts/main.py'],
     pathex=['/Users/macbook/Documents/getbiji_dy_export'],
     binaries=[],
-    datas=[('/Users/macbook/Documents/getbiji_dy_export/scripts', './scripts')],
-    hiddenimports=['scripts.app_paths', 'scripts.biji_export', 'scripts.auto_token'],
+    datas=[
+        ('/Users/macbook/Documents/getbiji_dy_export/scripts', './scripts'),
+        ('/Users/macbook/Documents/getbiji_dy_export/skill', './skill'),
+    ],
+    hiddenimports=[
+        'scripts.app_paths',
+        'scripts.biji_export',
+        'scripts.auto_token',
+        'scripts.biji_cli',
+        'scripts.skill_installer',
+        'scripts.gui_app',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -26,7 +36,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
