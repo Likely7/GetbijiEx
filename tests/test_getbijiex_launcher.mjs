@@ -49,7 +49,7 @@ test("appDataRoot follows platform conventions", () => {
 test("runtimeConfigPath supports isolated data directories", () => {
   assert.equal(
     runtimeConfigPath({ env: { GETBIJIEX_DATA_DIR: "/tmp/custom data" } }),
-    path.join("/tmp/custom data", "config", "cli_runtime.json"),
+    path.join(path.resolve("/tmp/custom data"), "config", "cli_runtime.json"),
   );
 });
 
