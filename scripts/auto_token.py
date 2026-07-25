@@ -13,10 +13,12 @@ from DrissionPage import ChromiumOptions, ChromiumPage
 from scripts import biji_export
 from scripts.app_paths import user_data_root
 
-BIJI_HOME = "https://www.biji.com"
+BIJI_HOME = "https://www.biji.com/subject"
 API_DOMAIN = "knowledge-api.trytalks.com"
 # 首次使用需要登录，超过这个秒数还没抓到就在日志里提示用户
 FIRST_LOGIN_HINT_SECONDS = 120
+# 空闲监听超时：这么长时间没有任何匹配请求就放弃，避免界面永远卡住
+IDLE_TIMEOUT_SECONDS = 300
 
 CHROME_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -78,6 +80,9 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
 
     options = ChromiumOptions().set_browser_path(executable)
     options.set_user_data_path(str(chrome_profile_dir()))
+    # 自动选空闲端口：默认 9222 可能被用户日常 Chrome（开远程调试）占用，
+    # 否则会错误地接管用户的浏览器
+    options.auto_port()
 
     try:
         page = ChromiumPage(options)
@@ -88,17 +93,17 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
     try:
         page.listen.start(API_DOMAIN)
         page.get(BIJI_HOME)
-        log("已打开 biji.com，正在监听登录请求…")
+        log("已打开 biji 知识库页面，正在监听登录请求…")
 
         start = time.monotonic()
         hinted = False
-        for packet in page.listen.steps():
+        for packet in page.listen.steps(timeout=IDLE_TIMEOUT_SECONDS):
             auth = extract_auth(packet.request.headers)
             if auth:
                 captured = auth
                 break
             if not hinted and time.monotonic() - start > FIRST_LOGIN_HINT_SECONDS:
-                log("还没抓到：请先在浏览器里登录 biji，再打开任意一篇笔记")
+                log("还没抓到：请先在浏览器里登录 biji，再打开任意一个知识库")
                 hinted = True
     except Exception as exc:
         raise TokenCaptureError(f"监听请求时出错：{exc}") from exc
@@ -116,4 +121,4 @@ def capture_token(log: Callable[[str], None] = print) -> dict:
     if not page.states.is_alive:
         raise CaptureCancelled("浏览器窗口已关闭，取消获取 Token")
 
-    raise TokenCaptureError("未捕获到 Token")
+    raise TokenCaptureError("监听超时，未捕获到 Token。请重试，或改用手动粘贴 Token")

@@ -5,6 +5,11 @@ Biji.com Token 自动获取脚本
 之后再次运行会自动捕获 Token，无需操作。
 """
 import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.auto_token import (
     CaptureCancelled,
