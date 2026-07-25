@@ -1,14 +1,15 @@
 from pathlib import Path
 import subprocess
 import sys
+import threading
 import tkinter as tk
-import webbrowser
 from tkinter import filedialog, messagebox, ttk
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts import auto_token
 from scripts import biji_export
 from scripts.app_paths import output_dir, user_data_root
 
@@ -51,7 +52,7 @@ class App:
 
         ttk.Label(
             auth_frame,
-            text="先点“打开 biji 登录页”，登录后打开任意笔记，在浏览器 DevTools 的 Request Headers 里复制 token。",
+            text="点“自动获取 Token”后会弹出 Chrome：首次使用请登录 biji 并打开任意笔记，之后自动完成。抓不到时再手动粘贴。",
             wraplength=680,
             justify="left",
         ).pack(anchor="w", pady=(8, 0))
@@ -59,7 +60,7 @@ class App:
         auth_btns = ttk.Frame(auth_frame)
         auth_btns.pack(anchor="w", pady=(10, 0))
 
-        self.open_login_button = ttk.Button(auth_btns, text="打开 biji 登录页", command=self.handle_refresh_token)
+        self.open_login_button = ttk.Button(auth_btns, text="自动获取 Token", command=self.handle_auto_token)
         self.open_login_button.pack(side="left")
 
         self.save_token_button = ttk.Button(auth_btns, text="保存 Token", command=self.handle_save_token)
@@ -147,26 +148,35 @@ class App:
                 pass
         self.auth_label.configure(text="未检测到有效 Token，请先保存。")
 
-    def handle_refresh_token(self):
-        self.set_busy(True, "正在打开 biji 登录页...")
+    def handle_auto_token(self):
+        self.set_busy(True, "正在自动获取 Token...")
+        self.append_log("启动 Chrome，准备自动获取 Token…")
+        threading.Thread(target=self._auto_token_worker, daemon=True).start()
+
+    def _auto_token_worker(self):
+        def log(msg):
+            self.root.after(0, self.append_log, msg)
+
         try:
-            webbrowser.open("https://www.biji.com", new=1)
-            self.append_log("已打开 biji.com，请先登录，再打开任意一篇笔记。")
-            self.append_log("请在浏览器 DevTools -> Network 中找到 knowledge-api.trytalks.com 请求，并复制 authorization / xi-csrf-token。")
-            messagebox.showinfo(
-                "请登录并复制 Token",
-                "已尝试打开 https://www.biji.com\n\n"
-                "1. 先登录\n"
-                "2. 打开任意笔记\n"
-                "3. 打开 DevTools -> Network\n"
-                "4. 找到 knowledge-api.trytalks.com 请求\n"
-                "5. 复制 authorization、xi-csrf-token，回到本工具粘贴并点“保存 Token”",
-            )
+            auto_token.capture_token(log=log)
+        except auto_token.CaptureCancelled:
+            self.root.after(0, self._auto_token_done, None)
         except Exception as exc:
-            self.append_log(f"❌ {exc}")
-            messagebox.showerror("操作失败", str(exc))
-        finally:
-            self.set_busy(False, "准备就绪")
+            self.root.after(0, self._auto_token_done, str(exc))
+        else:
+            self.root.after(0, self._auto_token_done, "success")
+
+    def _auto_token_done(self, result):
+        self.set_busy(False, "准备就绪")
+        self.refresh_auth_status()
+        if result == "success":
+            self.append_log("✅ Token 已自动获取并保存")
+            messagebox.showinfo("获取成功", "Token 已自动获取并保存")
+        elif result is None:
+            self.append_log("已取消获取 Token（浏览器窗口被关闭）")
+        else:
+            self.append_log(f"❌ {result}")
+            messagebox.showerror("获取失败", result)
 
     def handle_save_token(self):
         authorization = self.authorization_var.get().strip()
@@ -216,25 +226,35 @@ class App:
                 messagebox.showwarning("Topic ID 无效", "Topic ID 必须是数字")
                 return
 
+        output = self.output_dir_var.get().strip() or None
         self.set_busy(True, "正在导出笔记...")
+        self.append_log(f"开始导出：{url}")
+        threading.Thread(
+            target=self._export_worker, args=(url, topic_id, output), daemon=True
+        ).start()
+
+    def _export_worker(self, url, topic_id, output):
         try:
-            self.append_log(f"开始导出：{url}")
             result = biji_export.export_notes(
-                url,
-                topic_id_override=topic_id,
-                output_dir=self.output_dir_var.get().strip() or None,
+                url, topic_id_override=topic_id, output_dir=output
             )
-            self.append_log(f"✅ 导出完成：{result['author_name']}，共 {result['count']} 条")
-            self.append_log(f"输出目录：{result['output_dir']}")
-            self.append_log(f"Markdown：{result['markdown_path']}")
-            self.append_log(f"JSON：{result['json_path']}")
-            messagebox.showinfo("导出完成", f"已导出 {result['count']} 条笔记\n\n输出目录:\n{result['output_dir']}\n\nMarkdown:\n{result['markdown_path']}")
         except Exception as exc:
-            self.append_log(f"❌ {exc}")
-            messagebox.showerror("操作失败", str(exc))
-        finally:
-            self.set_busy(False, "准备就绪")
-            self.refresh_auth_status()
+            self.root.after(0, self._export_done, None, str(exc))
+        else:
+            self.root.after(0, self._export_done, result, None)
+
+    def _export_done(self, result, error):
+        self.set_busy(False, "准备就绪")
+        self.refresh_auth_status()
+        if error is not None:
+            self.append_log(f"❌ {error}")
+            messagebox.showerror("操作失败", error)
+            return
+        self.append_log(f"✅ 导出完成：{result['author_name']}，共 {result['count']} 条")
+        self.append_log(f"输出目录：{result['output_dir']}")
+        self.append_log(f"Markdown：{result['markdown_path']}")
+        self.append_log(f"JSON：{result['json_path']}")
+        messagebox.showinfo("导出完成", f"已导出 {result['count']} 条笔记\n\n输出目录:\n{result['output_dir']}\n\nMarkdown:\n{result['markdown_path']}")
 
     def choose_output_dir(self):
         selected = filedialog.askdirectory(initialdir=self.output_dir_var.get() or str(output_dir()))
