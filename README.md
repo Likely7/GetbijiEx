@@ -1,34 +1,4 @@
-# GetbijiEx
 
-把 Get笔记（biji.com / 得到大脑）知识库里订阅博主的笔记，批量导出成 Markdown 和 JSON。
-
-**不会终端、不会 Python、只会用 Agent，也可以安装。直接看下面第一部分。**
-
-## 已经装好软件？一条 npx 命令安装 Skill
-
-如果电脑里已经保留了 GetbijiEx App、Windows 程序或源码，可以把下面一整行复制给支持 Agent Skills 的 Agent 执行：
-
-```bash
-npx skills add Likely7/GetbijiEx --skill getbijiex
-```
-
-指定安装到 Claude Code：
-
-```bash
-npx skills add Likely7/GetbijiEx --skill getbijiex --agent claude-code -g -y
-```
-
-指定安装到 Codex：
-
-```bash
-npx skills add Likely7/GetbijiEx --skill getbijiex --agent codex -g -y
-```
-
-> **这条 npx 命令只安装 Skill，不会安装 GetbijiEx 软件本身。** 它使用的是公开的 `skills` 安装工具，不是本项目发布了一个同名 npm 软件包。执行这条命令需要 Node.js 22.20+。第一次导出时，Skill 会自动查找标准位置和 PATH 中已有的 GetbijiEx；如果没有找到，Agent 会在本机查找并代你配置真实路径。使用源码版时还需要 Python 3.11+ 和 `uv`。
-
-如果你的 Agent 不支持标准 Agent Skills 目录，继续使用下面的完整提示词，让它自己确认 Skill 目录并安装。
-
----
 
 ## 最简单的用法：把这段话复制给你的 Agent
 
